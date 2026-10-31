@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Film</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; background:#0c0c0c; color:#eee; font:15px -apple-system, system-ui, sans-serif;
+         padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  header { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+  h1 { font-size:17px; margin:0; letter-spacing:.12em; text-transform:uppercase; font-weight:600; }
+  button, .btn { background:#e8b04a; color:#111; border:0; border-radius:10px; padding:10px 16px; font-weight:600; font-size:15px; }
+  .ghost { background:#222; color:#eee; }
+  #stage { padding:0 12px; text-align:center; min-height:46vh; display:flex; align-items:center; justify-content:center; }
+  #out { max-width:100%; max-height:58vh; border-radius:4px; display:none; }
+  #hint { color:#777; }
+  .films { display:flex; gap:8px; overflow-x:auto; padding:14px 12px 4px; }
+  .films button { flex:0 0 auto; background:#1d1d1d; color:#ddd; font-size:13px; padding:8px 12px; }
+  .films button.on { background:#e8b04a; color:#111; }
+  #info { padding:6px 16px 0; font-size:12px; color:#999; min-height:34px; }
+  .ctrl { padding:4px 16px 0; }
+  .ctrl label { display:flex; align-items:center; gap:10px; font-size:13px; color:#aaa; margin:8px 0; }
+  .ctrl label span { width:84px; }
+  .ctrl input[type=range] { flex:1; accent-color:#e8b04a; }
+  .actions { display:flex; gap:10px; padding:14px 16px 20px; }
+  .actions button { flex:1; }
+  #err { color:#f66; font:11px monospace; padding:0 16px 16px; white-space:pre-wrap; }
+  input[type=file] { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Film</h1>
+  <label class="btn" for="file">Importar</label>
+  <input id="file" type="file" accept="image/*">
+</header>
+
+<div id="stage">
+  <div id="hint">Importa una foto de tu carrete</div>
+  <canvas id="out"></canvas>
+</div>
+
+<div class="films" id="films"></div>
+<div id="info"></div>
+
+<div class="ctrl">
+  <label><span>Fuerza</span><input type="range" id="strength" min="0" max="100" value="100"></label>
+  <label><span>Grano</span><input type="range" id="grain" min="0" max="150" value="100"></label>
+  <label><span>Halation</span><input type="range" id="hal" min="0" max="150" value="100"></label>
+  <label><span>Viñeteado</span><input type="range" id="vig" min="0" max="100" value="20"></label>
+  <label><span>Fuga de luz</span><input type="range" id="leak" min="0" max="100" value="0"></label>
+  <label><span>Fecha</span><input type="checkbox" id="date"></label>
+</div>
+
+<div class="actions">
+  <button class="ghost" id="reseed">Otro grano</button>
+  <button id="save" disabled>Guardar</button>
+</div>
+<div id="err"></div>
+
+<script>
+const MAXTEX = 4096, PREV = 1400;
+const BN = ['R','O','Y','G','A','B','P','M'];
+const TIER = { A:['●','medido en vídeo'], B:['◐','fichas y descripciones, sin medición'], C:['○','provisional, sin fuente directa'] };
+
+// Valores propios, derivados de descripciones públicas y fichas técnicas.
+// bands: [desplazamiento de matiz (grados), saturación (±), luminosidad (±)]
+// grain: [cantidad, tamaño, croma (0=mono,1=color), rugosidad]   hal: [cantidad, radio, color]
+const mk = o => Object.assign({ bw:0, mono:[.3,.59,.11], wb:[1,1,1], lift:.02, gain:[1,1,1], contrast:1, curveS:.15,
+  shTint:[0,0,0], hiTint:[0,0,0], sat:1, soft:.15, bands:{}, grain:[.3,1,.5,.5], hal:[0,.02,[1,.3,.1]] }, o);
+
+const FILMS = [
+ mk({ n:'Gold 200', t:'A', d:'Eje azul-dorado, rojos a naranja, verdes a amarillo, luces algo rojizas.',
+  lift:[.022,.02,.015], gain:[1.03,1,.95], contrast:1.08, curveS:.2, sat:1.06, soft:.12,
+  shTint:[.012,.006,-.006], hiTint:[.03,.012,-.03],
+  bands:{R:[10,-.05,0],O:[4,.12,.04],Y:[-5,.10,.04],G:[-22,-.05,-.03],A:[0,-.05,0],B:[3,.06,-.03],P:[-5,-.35,0],M:[0,-.30,0]},
+  grain:[.28,.9,.55,.4], hal:[.03,.015,[1,.3,.12]] }),
+ mk({ n:'Portra 400', t:'A', d:'Fiel y desaturada de forma pareja, verdes a amarillo, azul algo frío, grano suave.',
+  lift:[.026,.024,.026], gain:[1.02,1,.97], contrast:1, curveS:.1, sat:.86,
+  shTint:[.004,0,.004], hiTint:[.014,.005,-.012],
+  bands:{R:[5,-.06,.02],O:[1,-.02,0],Y:[-3,-.05,.02],G:[-12,-.08,.02],A:[0,-.10,-.02],B:[0,.04,-.06],P:[0,-.04,0],M:[2,-.04,.03]},
+  grain:[.30,1.05,.45,.35] }),
+ mk({ n:'Ektar 100', t:'A', d:'Azul hacia cian, rojos y dorados a naranja, púrpuras pastel, grano muy fino.',
+  lift:[.008,.008,.01], gain:[1.02,1,.96], contrast:1.1, curveS:.25, sat:.97,
+  hiTint:[.02,.01,-.015],
+  bands:{R:[7,-.03,0],O:[6,-.02,.01],Y:[-6,-.04,0],G:[-9,-.08,.03],A:[-6,0,-.03],B:[-9,.10,-.10],P:[0,-.25,0],M:[0,-.22,0]},
+  grain:[.18,.8,.4,.3] }),
+ mk({ n:'Tri-X 400', t:'B', d:'B/N de contraste alto y grano grueso (pensada para empujar a 800).',
+  bw:1, mono:[.34,.52,.14], lift:.03, contrast:1.2, curveS:.4, sat:0, grain:[.62,1.5,0,.9] }),
+ mk({ n:'CineStill 800T', t:'A', d:'Luz día sobre película de tungsteno: verdes y azules a cian, rojos naranja saturados, halation marcado.',
+  wb:[.9,1,1.13], lift:[.03,.03,.035], contrast:1.05, curveS:.18, soft:.28,
+  shTint:[-.012,.006,.022], hiTint:[.015,0,-.01],
+  bands:{R:[8,.15,-.04],O:[5,.12,-.02],Y:[-3,-.15,0],G:[22,-.12,-.05],A:[0,0,-.05],B:[-14,0,-.06],P:[-20,-.08,0],M:[-12,-.15,-.03]},
+  grain:[.36,1.2,.65,.5], hal:[.95,.032,[1,.30,.10]] }),
+ mk({ n:'HP5+', t:'B', d:'B/N equilibrada, contraste medio, grano parejo y sombras con detalle.',
+  bw:1, mono:[.30,.54,.16], lift:.028, contrast:1.08, curveS:.22, sat:0, grain:[.44,1.3,0,.4] }),
+ mk({ n:'Portra 160', t:'A', d:'Alta fidelidad tonal, desaturación suave, verdes entre verde y amarillo, púrpuras hacia azul.',
+  lift:[.02,.02,.022], gain:[1.01,1,.98], contrast:.98, curveS:.08, sat:.88, soft:.18,
+  hiTint:[.01,.004,-.008],
+  bands:{R:[-2,.02,0],O:[2,-.05,0],Y:[3,-.04,0],G:[-9,-.09,.03],A:[0,-.08,-.02],B:[-3,-.03,-.05],P:[-18,-.06,.03],M:[0,-.07,0]},
+  grain:[.2,.85,.4,.3] }),
+ mk({ n:'Velvia 100', t:'B', d:'Diapositiva de saturación ultra alta, negros profundos, contraste duro, grano finísimo.',
+  lift:0, contrast:1.18, curveS:.45, sat:1.28, soft:.05,
+  bands:{R:[-2,.10,-.04],O:[0,.08,0],Y:[-3,.05,0],G:[4,.12,-.05],A:[0,.08,-.03],B:[-3,.14,-.08],P:[0,.10,0],M:[-4,.10,0]},
+  grain:[.10,.7,.3,.2] }),
+ mk({ n:'Fomapan 200', t:'B', d:'B/N muy granulada, sensible al rojo y poco al azul: cielos oscuros, pieles claras.',
+  bw:1, mono:[.50,.40,.10], lift:.022, contrast:1.14, curveS:.38, sat:0, soft:.22, grain:[.58,1.45,0,1] }),
+ mk({ n:'Fujifilm C200', t:'C', d:'Aproximación: Fuji natural, algo menos cálida que Kodak. Sin fuente directa.',
+  lift:[.022,.022,.024], gain:[.995,1,1], contrast:1.06, curveS:.15, hiTint:[.006,.003,-.006],
+  bands:{R:[3,-.04,0],Y:[-2,-.05,0],G:[6,0,-.03],B:[0,.04,-.03]}, grain:[.30,1,.5,.4] }),
+ mk({ n:'Lomography 800', t:'C', d:'Aproximación a partir de la Color 400: saturada, verdes amarillos, contraste fuerte y grano visible.',
+  lift:.02, gain:[1.04,1,.94], contrast:1.12, curveS:.3, sat:1.12, soft:.22, hiTint:[.025,.01,-.025],
+  bands:{R:[12,-.04,0],O:[5,.04,0],Y:[-4,-.10,0],G:[-26,-.05,0],B:[-6,.02,-.03],P:[-8,-.10,0],M:[8,-.15,0]},
+  grain:[.52,1.35,.65,.6] }),
+ mk({ n:'CineStill 400D', t:'C', d:'Aproximación inferida de su hermana 50D: cian-naranja, halation moderado.',
+  wb:[.97,1,1.04], lift:[.026,.026,.03], contrast:1.04, curveS:.15, sat:.98, soft:.26,
+  shTint:[-.008,.006,.014], hiTint:[.012,.004,-.01],
+  bands:{R:[10,.08,-.03],O:[8,0,0],Y:[-2,-.12,0],G:[16,-.10,-.04],A:[0,0,-.04],B:[-10,.03,-.05],P:[-15,-.08,0],M:[-8,-.12,0]},
+  grain:[.32,1.05,.5,.4], hal:[.6,.028,[1,.32,.12]] }),
+ mk({ n:'Portra 800', t:'B', d:'Como la 400 pero más cálida, con más contraste, saturación y grano.',
+  lift:[.028,.026,.028], gain:[1.03,1,.95], contrast:1.06, curveS:.15, sat:.96, hiTint:[.022,.008,-.02],
+  bands:{R:[5,-.02,.02],O:[2,0,0],Y:[-3,-.02,.02],G:[-10,-.05,.02],A:[0,-.07,-.02],B:[0,.03,-.05],P:[0,-.02,0],M:[2,-.03,.03]},
+  grain:[.42,1.2,.5,.5] }),
+ mk({ n:'Provia 100F', t:'B', d:'Diapositiva de saturación y contraste medios, tonos algo fríos, grano finísimo.',
+  lift:.003, wb:[.99,1,1.02], contrast:1.1, curveS:.3, sat:1.1, soft:.06,
+  bands:{R:[0,.05,-.02],G:[2,.04,-.03],B:[-2,.08,-.05]}, grain:[.10,.7,.3,.2] }),
+ mk({ n:'Superia 400', t:'B', d:'Fuji limpia: verdes fríos y densos, rosas vivos, contraste algo mayor que Kodak.',
+  lift:[.024,.026,.028], gain:[.995,1.01,1], contrast:1.12, curveS:.22, sat:1.04,
+  shTint:[-.004,.006,.008], hiTint:[.008,.004,-.008],
+  bands:{R:[3,0,0],O:[2,-.02,0],Y:[-2,-.04,.01],G:[10,.05,-.06],A:[0,.04,-.03],B:[-2,.04,-.05],P:[4,0,0],M:[-4,.12,.03]},
+  grain:[.36,1.1,.55,.45] }),
+ mk({ n:'Pro 400H', t:'B', d:'Pastel: luces limpias, verdes densos y fríos, sombras con saturación contenida.',
+  lift:[.03,.032,.034], gain:[.99,1.01,1], contrast:.98, curveS:.1, sat:.9,
+  shTint:[-.003,.006,.006], hiTint:[-.004,.008,.006],
+  bands:{R:[2,-.06,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[14,.04,-.12],A:[0,-.04,-.02],B:[-2,-.06,-.02],P:[0,-.08,.02],M:[-5,.08,.05]},
+  grain:[.26,1,.5,.35] }),
+ mk({ n:'Ultramax 400', t:'A', d:'La más saturada y fiel, azules y cianes intensos, violetas hacia azul, grano medio.',
+  lift:.02, gain:[1.02,1,.97], contrast:1.07, curveS:.18, sat:1.08,
+  shTint:[-.004,0,.006], hiTint:[.022,.008,-.02],
+  bands:{R:[1,-.04,0],O:[4,0,0],Y:[-4,-.03,.02],G:[-4,.02,0],A:[-3,.08,-.03],B:[-2,.16,-.06],P:[-10,0,0],M:[0,-.10,0]},
+  grain:[.42,1.15,.6,.5] }),
+];
+
+const VS = `#version 300 es
+in vec2 p; out vec2 uv;
+void main(){ uv = p*.5+.5; gl_Position = vec4(p,0.,1.); }`;
+
+const FS = `#version 300 es
+precision highp float; precision highp int;
+in vec2 uv; out vec4 o;
+uniform sampler2D tex; uniform vec2 res; uniform float seed;
+uniform vec3 wb, lift, gain, shTint, hiTint, mono, halCol;
+uniform float bw, contrast, sCurve, sat, soft;
+uniform vec3 bands[8];
+uniform float grainAmt, grainSize, grainChroma, grainRough, halAmt, halRad, strength, vignette, leak;
+
+const float CEN[8] = float[8](0.,30.,60.,120.,180.,240.,275.,315.);
+const float WID[8] = float[8](45.,30.,60.,60.,60.,60.,40.,45.);
+
+vec3 toLin(vec3 c){ return pow(c, vec3(2.2)); }
+vec3 toGam(vec3 c){ return pow(max(c, vec3(0.)), vec3(1./2.2)); }
+float luma(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
+
+vec3 rgb2hsv(vec3 c){
+  vec4 K = vec4(0., -1./3., 2./3., -1.);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y); float e = 1e-10;
+  return vec3(abs(q.z + (q.w - q.y)/(6.*d + e)), d/(q.x + e), q.x);
+}
+vec3 hsv2rgb(vec3 c){
+  vec4 K = vec4(1., 2./3., 1./3., 3.);
+  vec3 p = abs(fract(c.xxx + K.xyz)*6. - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0., 1.), c.y);
+}
+
+uint pcg(uint v){ uint s = v*747796405u + 2891336453u; uint w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u; return (w >> 22u) ^ w; }
+float rnd(ivec2 i, uint s){ uint h = pcg(uint(i.x) + pcg(uint(i.y) + pcg(s + uint(seed))));
+  return float(h) * (1.0/4294967295.0); }
+float vnoise(vec2 p, uint s){
+  vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.-2.*f); ivec2 ii = ivec2(i);
+  float a = rnd(ii,s), b = rnd(ii+ivec2(1,0),s), c = rnd(ii+ivec2(0,1),s), d = rnd(ii+ivec2(1,1),s);
+  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
+}
+float gnoise(vec2 p, uint s){
+  float a = vnoise(p, s), b = vnoise(p*2.1 + 7.3, s + 13u);
+  float k = 0.4*grainRough;
+  return (a*(1.-k) + b*k - .5) * 2.6;
+}
+
+void main(){
+  vec3 src = texture(tex, uv).rgb;
+  vec3 base = mix(src, textureLod(tex, uv, 1.0).rgb, soft);
+  vec3 lin = toLin(base) * wb;
+
+  // Halation en luz lineal, a partir de las zonas realmente brillantes
+  if(halAmt > .001){
+    vec2 ts = vec2(textureSize(tex, 0));
+    float lod = clamp(log2(halRad * max(ts.x, ts.y) * .35), 1., 9.);
+    vec3 acc = vec3(0.);
+    for(int i = 0; i < 12; i++){
+      float a = float(i) * 2.39996;
+      float r = halRad * sqrt((float(i) + .5)/12.);
+      vec2 off = vec2(cos(a), sin(a) * res.x/res.y) * r;
+      vec3 s = toLin(textureLod(tex, uv + off, lod).rgb);
+      acc += s * smoothstep(.45, .95, luma(s));
+    }
+    lin += (acc/12.) * halCol * halAmt * 1.5;
+  }
+
+  vec3 c = toGam(lin);
+  if(bw > .5) c = vec3(dot(c, mono));
+
+  // Curva: contraste, S suave y negro levantado
+  c = clamp((c - .5)*contrast + .5, 0., 1.);
+  c = mix(c, c*c*(3. - 2.*c), sCurve);
+  float l = luma(c);
+  c += shTint*pow(1.-l, 2.) + hiTint*l*l;
+  c *= gain;
+  c = lift + c*(1. - lift);
+
+  // Color por bandas de matiz
+  vec3 hsv = rgb2hsv(clamp(c, 0., 1.));
+  float hd = hsv.x*360.;
+  float hs = 0., ss = 0., ls = 0., ws = 0.;
+  for(int i = 0; i < 8; i++){
+    float d = abs(mod(hd - CEN[i] + 180., 360.) - 180.);
+    float w = max(0., 1. - d/WID[i]); w = w*w*(3. - 2.*w);
+    ws += w; hs += w*bands[i].x; ss += w*bands[i].y; ls += w*bands[i].z;
+  }
+  ws = max(ws, 1.); hs /= ws; ss /= ws; ls /= ws;
+  float m = smoothstep(.02, .2, hsv.y);
+  hsv.x = fract(hsv.x + hs*m/360.);
+  hsv.y = clamp(hsv.y*(1. + ss*m), 0., 1.);
+  hsv.z = clamp(hsv.z*(1. + ls*m), 0., 1.);
+  c = hsv2rgb(hsv);
+  float l2 = luma(c);
+  c = mix(vec3(l2), c, sat);
+
+  c = mix(src, c, strength);
+
+  // Grano: tamaño relativo a la imagen, más presente en medios tonos
+  float cell = max(1., grainSize * max(res.x, res.y)/1800.);
+  vec2 gp = gl_FragCoord.xy / cell;
+  float n0 = gnoise(gp, 0u), n1 = gnoise(gp, 101u), n2 = gnoise(gp, 202u);
+  vec3 n = mix(vec3(n0), vec3(n0, n1, n2), grainChroma);
+  float L = luma(c);
+  float lw = .3 + .7*4.*L*(1. - L);
+  c += n * grainAmt * lw * .16;
+
+  // Viñeteado
+  vec2 q = uv - .5; q.x *= res.x/res.y;
+  c *= 1. - vignette*smoothstep(.3, .9, length(q));
+
+  // Fuga de luz por un borde
+  float side = step(.5, fract(seed*.37));
+  float x = mix(uv.x, 1. - uv.x, side);
+  float lk = pow(smoothstep(.35, 0., x), 2.) * (.7 + .3*sin(uv.y*4. + seed));
+  c += vec3(1., .45, .18) * lk * leak * .5;
+
+  o = vec4(clamp(c, 0., 1.), 1.);
+}`;
+
+const $ = id => document.getElementById(id);
+const out = $('out'), ctx = out.getContext('2d');
+const glc = document.createElement('canvas');
+const gl = glc.getContext('webgl2', { preserveDrawingBuffer:true, premultipliedAlpha:false });
+if(!gl){ $('err').textContent = 'Este navegador no soporta WebGL2.'; }
+
+function sh(t, s){
+  const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+  if(!gl.getShaderParameter(o, gl.COMPILE_STATUS)) $('err').textContent += gl.getShaderInfoLog(o) + '\n';
+  return o;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) $('err').textContent += gl.getProgramInfoLog(prog) + '\n';
+gl.useProgram(prog);
+
+const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc);
+gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+const U = {};
+['tex','res','seed','wb','lift','gain','shTint','hiTint','mono','halCol','bw','contrast','sCurve','sat','soft','bands',
+ 'grainAmt','grainSize','grainChroma','grainRough','halAmt','halRad','strength','vignette','leak']
+ .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+const tex = gl.createTexture();
+
+let cur = FILMS[0], seed = Math.floor(Math.random()*1e6), iw = 0, ih = 0, ready = false;
+const v3 = x => Array.isArray(x) ? x : [x, x, x];
+const bandsArr = o => { const a = new Float32Array(24); for(const k in o) a.set(o[k], BN.indexOf(k)*3); return a; };
+
+function draw(w, h){
+  glc.width = w; glc.height = h; gl.viewport(0, 0, w, h);
+  const p = cur;
+  gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, w, h); gl.uniform1f(U.seed, seed);
+  gl.uniform3fv(U.wb, p.wb); gl.uniform3fv(U.lift, v3(p.lift)); gl.uniform3fv(U.gain, p.gain);
+  gl.uniform3fv(U.shTint, p.shTint); gl.uniform3fv(U.hiTint, p.hiTint); gl.uniform3fv(U.mono, p.mono);
+  gl.uniform3fv(U.halCol, p.hal[2]);
+  gl.uniform1f(U.bw, p.bw); gl.uniform1f(U.contrast, p.contrast); gl.uniform1f(U.sCurve, p.curveS);
+  gl.uniform1f(U.sat, p.sat); gl.uniform1f(U.soft, p.soft);
+  gl.uniform3fv(U.bands, bandsArr(p.bands));
+  gl.uniform1f(U.grainAmt, p.grain[0] * $('grain').value/100);
+  gl.uniform1f(U.grainSize, p.grain[1]);
+  gl.uniform1f(U.grainChroma, p.grain[2]); gl.uniform1f(U.grainRough, p.grain[3]);
+  gl.uniform1f(U.halAmt, p.hal[0] * $('hal').value/100); gl.uniform1f(U.halRad, p.hal[1]);
+  gl.uniform1f(U.strength, $('strength').value/100);
+  gl.uniform1f(U.vignette, $('vig').value/100);
+  gl.uniform1f(U.leak, $('leak').value/100);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function stamp(x, w, h){
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const t = `'${String(d.getFullYear()).slice(2)}  ${pad(d.getMonth()+1)}  ${pad(d.getDate())}`;
+  const fs = Math.round(Math.max(w, h) * .026);
+  x.font = `${fs}px "Courier New", monospace`; x.textAlign = 'right'; x.textBaseline = 'bottom';
+  x.shadowColor = 'rgba(255,90,0,.9)'; x.shadowBlur = fs*.35; x.fillStyle = '#ff8a2a';
+  x.fillText(t, w - fs*1.2, h - fs); x.shadowBlur = 0;
+}
+
+function render(){
+  if(!ready) return;
+  const k = Math.min(1, PREV/Math.max(iw, ih));
+  const w = Math.round(iw*k), h = Math.round(ih*k);
+  draw(w, h);
+  out.width = w; out.height = h; ctx.drawImage(glc, 0, 0);
+  if($('date').checked) stamp(ctx, w, h);
+}
+let pending = false;
+const req = () => { if(pending) return; pending = true; requestAnimationFrame(() => { pending = false; render(); }); };
+
+function loadImage(file){
+  const url = URL.createObjectURL(file), im = new Image();
+  im.onload = () => {
+    let w = im.naturalWidth, h = im.naturalHeight;
+    const k = Math.min(1, MAXTEX/Math.max(w, h)); w = Math.round(w*k); h = Math.round(h*k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(im, 0, 0, w, h);   // aplica la orientación EXIF
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    iw = w; ih = h; ready = true; URL.revokeObjectURL(url);
+    $('hint').style.display = 'none'; out.style.display = 'block'; $('save').disabled = false;
+    render();
+  };
+  im.src = url;
+}
+
+function save(){
+  draw(iw, ih);
+  const c = document.createElement('canvas'); c.width = iw; c.height = ih;
+  const x = c.getContext('2d'); x.drawImage(glc, 0, 0);
+  if($('date').checked) stamp(x, iw, ih);
+  render();
+  c.toBlob(async blob => {
+    const f = new File([blob], `film_${Date.now()}.jpg`, { type:'image/jpeg' });
+    if(navigator.canShare && navigator.canShare({ files:[f] })){
+      try { await navigator.share({ files:[f] }); return; } catch(e){ if(e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click();
+  }, 'image/jpeg', .95);
+}
+
+// UI
+const fr = $('films');
+function pick(f, btn){
+  cur = f; [...fr.children].forEach(b => b.className = ''); btn.className = 'on';
+  $('info').textContent = `${TIER[f.t][0]} ${f.n}: ${f.d} (${TIER[f.t][1]})`;
+  req();
+}
+FILMS.forEach((f, i) => {
+  const b = document.createElement('button'); b.textContent = `${TIER[f.t][0]} ${f.n}`;
+  b.onclick = () => pick(f, b); fr.appendChild(b); if(i === 0) pick(f, b);
+});
+['strength','grain','hal','vig','leak','date'].forEach(id => $(id).addEventListener('input', req));
+$('file').addEventListener('change', e => e.target.files[0] && loadImage(e.target.files[0]));
+$('reseed').onclick = () => { seed = Math.floor(Math.random()*1e6); req(); };
+$('save').onclick = save;
+</script>
+</body>
+</html>
