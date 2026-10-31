@@ -195,12 +195,11 @@ FILMS.forEach(f => Object.assign(f, PATCH2[f.n] || {}));
 // Grano más visible en color (solo películas no B/N)
 FILMS.forEach(f => { if(!f.bw) f.grain = [f.grain[0]*1.5, f.grain[1], f.grain[2], f.grain[3]]; });
 
-// Parche 3: menos halation sobre superficies claras, Portra menos grises
+// Parche 3: Portra menos grises. La halation ya se arregla con el umbral del shader.
+// Para quitarlo, borra este bloque.
 const PATCH3 = {
- 'CineStill 800T': { hal:[.4,.03,[1,.28,.1]] },
- 'CineStill 400D': { hal:[.22,.026,[1,.32,.12]] },
- 'Portra 400':     { sat:.94, lift:[.034,.032,.034] },
- 'Portra 160':     { sat:.96 },
+ 'Portra 400': { sat:.94 },
+ 'Portra 160': { sat:.96 },
 };
 FILMS.forEach(f => Object.assign(f, PATCH3[f.n] || {}));
 
@@ -256,7 +255,7 @@ void main(){
   vec3 base = mix(src, textureLod(tex, uv, 1.0).rgb, soft);
   vec3 lin = toLin(base) * wb;
 
-  // Halation en luz lineal, a partir de las zonas realmente brillantes
+  // Halation en luz lineal, solo a partir de luces casi quemadas
   if(halAmt > .001){
     vec2 ts = vec2(textureSize(tex, 0));
     float lod = clamp(log2(halRad * max(ts.x, ts.y) * .35), 1., 9.);
