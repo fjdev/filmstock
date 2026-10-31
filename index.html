@@ -5,73 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#050506">
 <title>Film</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+    --cond: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --rgb: 255,90,42; --ph: #ff5a2a; --bar1: #38d6b0; --bar2: #6a3cff; --off: #231512;
+  }
+  :root[data-theme=amber] { --rgb:255,150,30; --ph:#ff9a1f; --bar1:#ffd24a; --bar2:#ff5a12; --off:#241708; }
+  :root[data-theme=ice]   { --rgb:140,200,255; --ph:#8cc8ff; --bar1:#e8f6ff; --bar2:#2f7bff; --off:#0e1a26; }
+  :root[data-theme=vfd]   { --rgb:170,150,255; --ph:#b3a2ff; --bar1:#4be3c1; --bar2:#7a4cff; --off:#1a1530; }
+
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin:0; background:#0c0c0c; color:#eee; font:15px -apple-system, system-ui, sans-serif;
-         padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
-  header { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
-  h1 { font-size:17px; margin:0; letter-spacing:.12em; text-transform:uppercase; font-weight:600; }
-  button, .btn { background:#e8b04a; color:#111; border:0; border-radius:10px; padding:10px 16px; font-weight:600; font-size:15px; }
-  .ghost { background:#222; color:#eee; }
-  #stage { padding:0 12px; text-align:center; min-height:46vh; display:flex; align-items:center; justify-content:center; }
-  #out { max-width:100%; max-height:58vh; border-radius:4px; display:none; }
-  #hint { color:#777; }
-  .films { display:flex; gap:8px; overflow-x:auto; padding:14px 12px 4px; }
-  .films button { flex:0 0 auto; background:#1d1d1d; color:#ddd; font-size:13px; padding:8px 12px; }
-  .films button.on { background:#e8b04a; color:#111; }
-  #info { padding:6px 16px 0; font-size:12px; color:#999; min-height:34px; }
-  .ctrl { padding:4px 16px 0; }
-  .ctrl label { display:flex; align-items:center; gap:10px; font-size:13px; color:#aaa; margin:8px 0; }
-  .ctrl label span { width:84px; }
-  .ctrl input[type=range] { flex:1; accent-color:#e8b04a; }
-  .actions { display:flex; gap:10px; padding:14px 16px 20px; }
-  .actions button { flex:1; }
-  #err { color:#f66; font:11px monospace; padding:0 16px 16px; white-space:pre-wrap; }
+  body {
+    margin:0; min-height:100dvh; color:var(--ph); font:12px var(--mono);
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 55% at 50% 0%, rgba(var(--rgb),.12), transparent 60%),
+      #050506;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .app { max-width:560px; margin:0 auto; }
+
+  header { display:flex; align-items:flex-end; justify-content:space-between; gap:10px;
+           padding:16px 16px 10px; border-bottom:1px solid rgba(var(--rgb),.35); }
+  .brand h1 { margin:0; display:inline-block; transform:scaleX(.82); transform-origin:left bottom;
+              font:800 30px/1 var(--cond); letter-spacing:.06em; text-transform:uppercase;
+              text-shadow:0 0 12px rgba(var(--rgb),.7); }
+  .brand small { display:block; margin-top:3px; font-size:8px; letter-spacing:.32em; color:rgba(var(--rgb),.7); }
+  .hbtns { display:flex; gap:8px; align-items:center; }
+
+  button, .btn {
+    font:600 11px var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--ph);
+    background:transparent; border:1px solid var(--ph); border-radius:2px; padding:9px 12px;
+    text-shadow:0 0 6px rgba(var(--rgb),.6);
+    box-shadow:0 0 10px rgba(var(--rgb),.2), inset 0 0 8px rgba(var(--rgb),.1);
+  }
+  button:active, .btn:active { background:rgba(var(--rgb),.22); }
+  button.solid { background:var(--ph); color:#080606; text-shadow:none; box-shadow:0 0 16px rgba(var(--rgb),.5); }
+  button:disabled { opacity:.35; }
   input[type=file] { display:none; }
+
+  .frame { position:relative; margin:14px 12px 0; padding:26px 8px 22px;
+           border:1px solid rgba(var(--rgb),.4);
+           box-shadow:0 0 30px rgba(var(--rgb),.12), inset 0 0 30px rgba(var(--rgb),.06); }
+  .frame::before, .frame::after { content:''; position:absolute; width:14px; height:14px; border:2px solid var(--ph); }
+  .frame::before { top:-2px; left:-2px; border-right:0; border-bottom:0; }
+  .frame::after  { bottom:-2px; right:-2px; border-left:0; border-top:0; }
+  .hud { position:absolute; font-size:9px; letter-spacing:.22em; text-transform:uppercase; color:rgba(var(--rgb),.85); }
+  .tl { top:8px; left:10px; } .tr { top:8px; right:10px; } .bl { bottom:6px; left:10px; } .br { bottom:6px; right:10px; }
+  .live { animation:bl 1.4s steps(1) infinite; }
+  @keyframes bl { 50% { opacity:.25; } }
+
+  #stage { text-align:center; min-height:44vh; display:flex; align-items:center; justify-content:center; }
+  #out { max-width:100%; max-height:58vh; display:none; border:1px solid rgba(var(--rgb),.5);
+         box-shadow:0 0 18px rgba(var(--rgb),.25); }
+  #hint { color:rgba(var(--rgb),.7); letter-spacing:.2em; text-transform:uppercase; font-size:11px; }
+  #hint::after { content:'_'; animation:bl 1s steps(1) infinite; }
+
+  .strip { display:flex; align-items:center; gap:14px; padding:14px 16px 0; }
+  .seg { display:flex; gap:6px; }
+  .seg svg { height:46px; width:auto; transform:skewX(-8deg); }
+  .seg polygon { fill:var(--ph); opacity:.1; }
+  .seg polygon.on { opacity:1; filter:drop-shadow(0 0 4px rgba(var(--rgb),.9)); }
+  .nm { flex:1; min-width:0; }
+  .nm small { display:block; font-size:9px; letter-spacing:.3em; opacity:.7; }
+  .nm span { display:block; font:800 22px/1.05 var(--cond); text-transform:uppercase; letter-spacing:.03em;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 0 10px rgba(var(--rgb),.6); }
+  .tier { font-size:9px; letter-spacing:.14em; text-transform:uppercase; border:1px solid rgba(var(--rgb),.6);
+          padding:4px 6px; white-space:nowrap; }
+
+  .films { display:grid; grid-template-rows:repeat(2, auto); grid-auto-flow:column; grid-auto-columns:max-content;
+           gap:6px; overflow-x:auto; padding:14px 12px 6px; scrollbar-width:none; }
+  .films::-webkit-scrollbar { display:none; }
+  .films button { display:flex; gap:8px; align-items:center; padding:8px 10px; font-size:10px; letter-spacing:.1em;
+                  border-color:rgba(var(--rgb),.35); color:rgba(var(--rgb),.9); box-shadow:none; text-shadow:none; }
+  .films button i { font-style:normal; opacity:.55; }
+  .films button u { text-decoration:none; font-size:9px; opacity:.8; }
+  .films button.on { background:var(--ph); color:#090606; border-color:var(--ph); box-shadow:0 0 14px rgba(var(--rgb),.6); }
+
+  #info { margin:10px 16px 0; padding:8px 10px; border-left:2px solid var(--ph); background:rgba(var(--rgb),.06);
+          font-size:11px; line-height:1.5; color:rgba(var(--rgb),.85); min-height:44px; }
+  #info::before { content:'> '; }
+
+  .ctrl { position:relative; margin:18px 16px 0; padding:6px 12px; border:1px solid rgba(var(--rgb),.35); }
+  .ctrl::before { content:'PARÁMETROS'; position:absolute; top:-7px; left:10px; background:#050506; padding:0 6px;
+                  font-size:9px; letter-spacing:.3em; color:var(--ph); }
+  .ctrl label { display:flex; align-items:center; gap:10px; margin:12px 0; font-size:10px; letter-spacing:.14em;
+                text-transform:uppercase; color:rgba(var(--rgb),.9); }
+  .ctrl label span { width:84px; }
+  .rd { width:34px; text-align:right; font-weight:600; font-variant-numeric:tabular-nums; color:var(--ph);
+        text-shadow:0 0 8px rgba(var(--rgb),.7); }
+  .ctrl input[type=range] {
+    -webkit-appearance:none; appearance:none; flex:1; height:18px; margin:0; outline:none; border-radius:2px;
+    background:
+      linear-gradient(90deg, transparent var(--p,50%), var(--off) var(--p,50%)),
+      linear-gradient(90deg, var(--bar1), var(--bar2));
+    -webkit-mask:repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
+            mask:repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
+  }
+  .ctrl input[type=range]::-webkit-slider-runnable-track { background:transparent; height:18px; }
+  .ctrl input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:18px; background:transparent; }
+  .ctrl input[type=range]::-moz-range-thumb { width:14px; height:18px; background:transparent; border:0; }
+  .ctrl input[type=checkbox] { -webkit-appearance:none; appearance:none; position:relative; width:46px; height:20px; margin:0;
+                               border:1px solid var(--ph); border-radius:2px; background:transparent; }
+  .ctrl input[type=checkbox]::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:14px;
+                                      background:rgba(var(--rgb),.25); transition:transform .15s; }
+  .ctrl input[type=checkbox]:checked::after { transform:translateX(20px); background:var(--ph); box-shadow:0 0 10px var(--ph); }
+
+  .actions { display:flex; gap:10px; padding:16px 16px 8px; }
+  .actions button { flex:1; padding:12px; }
+  #err { color:#f66; font:11px monospace; padding:0 16px 16px; white-space:pre-wrap; }
+  .foot { padding:4px 16px 18px; font-size:8px; letter-spacing:.3em; text-transform:uppercase; color:rgba(var(--rgb),.45); }
+
+  @media (prefers-reduced-motion: reduce) { .live, #hint::after { animation:none; } }
 </style>
 </head>
 <body>
+<div class="app">
 <header>
-  <h1>Film</h1>
-  <label class="btn" for="file">Importar</label>
-  <input id="file" type="file" accept="image/*">
+  <div class="brand"><h1>Film</h1><small>Unidad de imagen analógica // MK.1</small></div>
+  <div class="hbtns">
+    <button id="theme" type="button">◐ nerv</button>
+    <label class="btn" for="file">Importar</label>
+    <input id="file" type="file" accept="image/*">
+  </div>
 </header>
 
-<div id="stage">
-  <div id="hint">Importa una foto de tu carrete</div>
-  <canvas id="out"></canvas>
+<div class="frame">
+  <div class="hud tl" id="hudfilm">— — —</div>
+  <div class="hud tr" id="hudres">Sin señal</div>
+  <div id="stage">
+    <div id="hint">Importa una foto de tu carrete</div>
+    <canvas id="out"></canvas>
+  </div>
+  <div class="hud bl">Sys.film // analog</div>
+  <div class="hud br" id="hudstate">Stby</div>
+</div>
+
+<div class="strip">
+  <div class="seg" id="seg"></div>
+  <div class="nm"><small>CANAL</small><span id="nm">—</span></div>
+  <div class="tier" id="tier">—</div>
 </div>
 
 <div class="films" id="films"></div>
 <div id="info"></div>
 
 <div class="ctrl">
-  <label><span>Fuerza</span><input type="range" id="strength" min="0" max="100" value="100"></label>
-  <label><span>Grano</span><input type="range" id="grain" min="0" max="150" value="100"></label>
-  <label><span>Halation</span><input type="range" id="hal" min="0" max="150" value="100"></label>
-  <label><span>Viñeteado</span><input type="range" id="vig" min="0" max="100" value="20"></label>
-  <label><span>Fuga de luz</span><input type="range" id="leak" min="0" max="100" value="0"></label>
-  <label><span>Fecha</span><input type="checkbox" id="date"></label>
+  <label><span>Fuerza</span><input type="range" id="strength" min="0" max="100" value="100"><b class="rd" id="v_strength"></b></label>
+  <label><span>Grano</span><input type="range" id="grain" min="0" max="150" value="100"><b class="rd" id="v_grain"></b></label>
+  <label><span>Halation</span><input type="range" id="hal" min="0" max="150" value="100"><b class="rd" id="v_hal"></b></label>
+  <label><span>Viñeteado</span><input type="range" id="vig" min="0" max="100" value="20"><b class="rd" id="v_vig"></b></label>
+  <label><span>Fuga de luz</span><input type="range" id="leak" min="0" max="100" value="0"><b class="rd" id="v_leak"></b></label>
+  <label><span>Fecha</span><input type="checkbox" id="date"><b class="rd" id="v_date"></b></label>
 </div>
 
 <div class="actions">
   <button class="ghost" id="reseed">Otro grano</button>
-  <button id="save" disabled>Guardar</button>
+  <button class="solid" id="save" disabled>Guardar</button>
 </div>
 <div id="err"></div>
+<div class="foot">Film // procesado local · sin subida</div>
+</div>
 
 <script>
 const MAXTEX = 4096, PREV = 1400;
+const HT0 = .92, HT1 = .99;   // umbral de luces quemadas para el halation
 const BN = ['R','O','Y','G','A','B','P','M'];
-const TIER = { A:['●','medido en vídeo y contrastado con referencias'], B:['◐','fichas y referencias visuales, sin medición'], C:['○','provisional, sin fuente directa'] };
+const TIER = { A:['●','medido y contrastado con referencias'], B:['◐','fichas y referencias visuales, sin medición'], C:['○','provisional, sin fuente directa'] };
 
-// Valores propios, derivados de descripciones públicas y fichas técnicas.
 // bands: [desplazamiento de matiz (grados), saturación (±), luminosidad (±)]
 // grain: [cantidad, tamaño, croma (0=mono,1=color), rugosidad]   hal: [cantidad, radio, color]
+// curve / curveR / curveG / curveB: puntos [entrada, salida] de 0 a 1 (si hay curve, sustituye a contrast, curveS y lift)
+// midTint: tinte aditivo en medios tonos
 const mk = o => Object.assign({ bw:0, mono:[.3,.59,.11], wb:[1,1,1], lift:.02, gain:[1,1,1], contrast:1, curveS:.15,
-  shTint:[0,0,0], hiTint:[0,0,0], sat:1, soft:.15, bands:{}, grain:[.3,1,.5,.5], hal:[0,.02,[1,.3,.1]] }, o);
+  shTint:[0,0,0], hiTint:[0,0,0], midTint:[0,0,0], sat:1, soft:.15, bands:{}, grain:[.3,1,.5,.5], hal:[0,.02,[1,.3,.1]] }, o);
 
 const FILMS = [
  mk({ n:'Gold 200', t:'A', d:'Eje azul-dorado, rojos a naranja, verdes a amarillo, luces algo rojizas.',
@@ -116,18 +227,10 @@ const FILMS = [
   lift:.02, gain:[1.04,1,.94], contrast:1.12, curveS:.3, sat:1.12, soft:.22, hiTint:[.025,.01,-.025],
   bands:{R:[12,-.04,0],O:[5,.04,0],Y:[-4,-.10,0],G:[-26,-.05,0],B:[-6,.02,-.03],P:[-8,-.10,0],M:[8,-.15,0]},
   grain:[.52,1.35,.65,.6] }),
- mk({ n:'CineStill 400D', t:'C', d:'Aproximación inferida de su hermana 50D: cian-naranja, halation moderado.',
-  wb:[.97,1,1.04], lift:[.026,.026,.03], contrast:1.04, curveS:.15, sat:.98, soft:.26,
-  shTint:[-.008,.006,.014], hiTint:[.012,.004,-.01],
-  bands:{R:[10,.08,-.03],O:[8,0,0],Y:[-2,-.12,0],G:[16,-.10,-.04],A:[0,0,-.04],B:[-10,.03,-.05],P:[-15,-.08,0],M:[-8,-.12,0]},
-  grain:[.32,1.05,.5,.4], hal:[.6,.028,[1,.32,.12]] }),
  mk({ n:'Portra 800', t:'B', d:'Como la 400 pero más cálida, con más contraste, saturación y grano.',
   lift:[.028,.026,.028], gain:[1.03,1,.95], contrast:1.06, curveS:.15, sat:.96, hiTint:[.022,.008,-.02],
   bands:{R:[5,-.02,.02],O:[2,0,0],Y:[-3,-.02,.02],G:[-10,-.05,.02],A:[0,-.07,-.02],B:[0,.03,-.05],P:[0,-.02,0],M:[2,-.03,.03]},
   grain:[.42,1.2,.5,.5] }),
- mk({ n:'Provia 100F', t:'B', d:'Diapositiva de saturación y contraste medios, tonos algo fríos, grano finísimo.',
-  lift:.003, wb:[.99,1,1.02], contrast:1.1, curveS:.3, sat:1.1, soft:.06,
-  bands:{R:[0,.05,-.02],G:[2,.04,-.03],B:[-2,.08,-.05]}, grain:[.10,.7,.3,.2] }),
  mk({ n:'Superia 400', t:'B', d:'Fuji limpia: verdes fríos y densos, rosas vivos, contraste algo mayor que Kodak.',
   lift:[.024,.026,.028], gain:[.995,1.01,1], contrast:1.12, curveS:.22, sat:1.04,
   shTint:[-.004,.006,.008], hiTint:[.008,.004,-.008],
@@ -146,7 +249,6 @@ const FILMS = [
 ];
 
 // Parche 1: ajustes de calibración a partir de las capturas de referencia.
-// Para volver a los valores anteriores, borra este bloque entero.
 const PATCH = {
  'Gold 200':    { lift:[.012,.01,.008], contrast:1.1, curveS:.25 },
  'HP5+':        { lift:.012, contrast:1.16, curveS:.3 },
@@ -160,7 +262,6 @@ const PATCH = {
  'Lomography 800': { t:'B', lift:.035, gain:[1,1,1], contrast:1, curveS:.1, sat:.98, soft:.25,
                   shTint:[.006,0,.018], hiTint:[-.004,.002,.012],
                   bands:{R:[12,-.04,0],O:[5,.04,0],Y:[-4,0,0],G:[-22,.08,0],B:[-6,.06,-.03],P:[-8,-.10,0],M:[8,-.15,0]} },
- 'CineStill 400D': { t:'B' },
  'Portra 400':  { lift:[.034,.032,.034], contrast:.96, curveS:.08,
                   shTint:[-.004,.004,.008], hiTint:[.014,.006,-.01] },
  'Portra 800':  { contrast:1.1, curveS:.22, sat:1.02,
@@ -168,9 +269,7 @@ const PATCH = {
  'Ektar 100':   { sat:1.02, shTint:[-.006,.004,.012],
                   bands:{R:[7,.04,0],O:[6,.05,.01],Y:[-6,0,0],G:[-9,.03,.02],A:[-6,0,-.03],B:[-9,.10,-.10],P:[0,-.10,0],M:[0,-.10,0]} },
  'Tri-X 400':   { contrast:1.06, curveS:.2, grain:[.45,1.3,0,.7] },
- 'Provia 100F': { sat:1.06, contrast:1.12, curveS:.32, shTint:[-.008,0,.014],
-                  bands:{R:[0,.08,-.02],Y:[0,.06,0],G:[2,.03,-.03],B:[-2,.08,-.05]} },
- 'CineStill 800T': { wb:[.95,1.01,1.05], shTint:[-.014,.012,.02], hiTint:[.012,.004,-.006], hal:[2.2,.045,[1,.28,.1]] },
+ 'CineStill 800T': { wb:[.95,1.01,1.05], shTint:[-.014,.012,.02], hiTint:[.012,.004,-.006], hal:[1,.045,[1,.28,.1]] },
  'Superia 400': { contrast:1.1, sat:1.06, hiTint:[-.008,.004,.006],
                   bands:{R:[3,.08,0],O:[2,.06,0],Y:[-2,-.04,.01],G:[10,.02,-.06],A:[0,.04,-.03],B:[-2,.08,-.05],P:[4,0,0],M:[-4,.12,.03]} },
  'Pro 400H':    { lift:[.032,.036,.036], hiTint:[-.012,.012,.008],
@@ -179,7 +278,6 @@ const PATCH = {
 FILMS.forEach(f => Object.assign(f, PATCH[f.n] || {}));
 
 // Parche 2: más carácter en las películas neutras, grano en color, menos rosa en 800T.
-// Para quitarlo, borra este bloque y las dos líneas de grano de debajo.
 const PATCH2 = {
  'CineStill 800T': { hiTint:[.002,.006,.004], wb:[.97,1.01,1.03],
                      bands:{R:[8,.06,-.04],O:[5,.04,-.02],Y:[-3,-.15,0],G:[22,-.12,-.05],A:[0,0,-.05],B:[-14,0,-.06],P:[-20,-.08,0],M:[-12,-.15,-.03]} },
@@ -195,14 +293,125 @@ FILMS.forEach(f => Object.assign(f, PATCH2[f.n] || {}));
 // Grano más visible en color (solo películas no B/N)
 FILMS.forEach(f => { if(!f.bw) f.grain = [f.grain[0]*1.5, f.grain[1], f.grain[2], f.grain[3]]; });
 
-// Parche 3: Portra menos grises y más halation en las CineStill (el umbral del shader evita teñir paredes).
-// Para quitarlo, borra este bloque.
+// Parche 3: Portra menos grises.
 const PATCH3 = {
- 'Portra 400':     { sat:.94 },
- 'Portra 160':     { sat:.96 },
- 'CineStill 400D': { hal:[1.2,.036,[1,.32,.12]] },
+ 'Portra 400': { sat:.94 },
+ 'Portra 160': { sat:.96 },
 };
 FILMS.forEach(f => Object.assign(f, PATCH3[f.n] || {}));
+
+// Parche 4: recalibración con medidas de referencia (valores propios, redondeados, en nuestras unidades).
+// Estas películas usan curva tonal real y tinte de medios.
+const PATCH4 = {
+ 'Gold 200': { curve:[[0,.05],[.15,.18],[.4,.4],[1,1]], gain:[1,1,1], sat:1, soft:.05,
+   shTint:[.015,.012,-.027], midTint:[0,0,0], hiTint:[0,0,0],
+   bands:{R:[4,-.19,.09],O:[-1,.05,.08],Y:[-4,.03,.11],G:[-7,0,.04],A:[0,-.02,-.03],B:[-5,.01,-.01],P:[0,-.23,.11],M:[3,-.17,.18]},
+   grain:[.38,1.4,.55,.4] },
+ 'Portra 400': { curve:[[0,.05],[.15,.15],[.3,.3],[.5,.5],[1,1]], gain:[1,1,1], sat:1, soft:0,
+   shTint:[.008,.002,-.010], midTint:[.017,-.001,-.016], hiTint:[0,0,0],
+   bands:{R:[2,-.21,.02],O:[15,-.08,0],Y:[1,-.14,.03],G:[-6,-.07,.02],A:[1,-.16,-.03],B:[-1,-.07,-.11],P:[0,-.10,.03],M:[2,-.19,.10]},
+   grain:[.50,1.05,.45,.35] },
+ 'Portra 160': { curve:[[0,.05],[.5,.5],[1,1]], gain:[1,1,1], sat:1, soft:.04,
+   shTint:[.008,-.004,-.004], midTint:[-.004,.005,-.001], hiTint:[.003,-.001,-.002],
+   bands:{R:[-4,.04,-.02],O:[1,-.08,-.01],Y:[2,-.04,-.01],G:[-2,-.10,.04],A:[0,-.10,-.04],B:[-3,-.03,-.06],P:[-11,-.05,.04],M:[0,-.10,-.02]},
+   grain:[.32,1.05,.4,.3] },
+ 'Ektar 100': { curve:[[0,0],[.15,.15],[.5,.55],[.75,.79],[1,1]], gain:[1,1,1], sat:1, soft:.08,
+   shTint:[0,0,0], midTint:[.006,.001,-.007], hiTint:[.006,.002,-.008],
+   bands:{R:[2,-.08,0],O:[2,-.04,0],Y:[0,-.16,0],G:[-3,-.17,.04],A:[2,-.14,-.02],B:[-2,-.15,-.08],P:[-3,-.09,.06],M:[2,-.12,-.01]},
+   grain:[.40,.8,.4,.3] },
+ 'Ultramax 400': { curve:[[0,.055],[.26,.25],[.5,.5],[1,1]], gain:[1,1,1], sat:1, soft:0,
+   shTint:[-.004,.001,.003], midTint:[0,0,0], hiTint:[.014,-.005,-.010],
+   bands:{R:[0,-.07,0],O:[4,-.01,0],Y:[5,-.07,.01],G:[0,0,.02],A:[0,0,-.04],B:[-3,.04,-.02],P:[-5,-.01,.04],M:[0,-.11,-.02]},
+   grain:[.62,1.05,.6,.5] },
+ 'CineStill 800T': { curve:[[0,.05],[1,1]], curveR:[[0,0],[.7,.72],[.9,.93],[1,1]], curveG:[[0,.004],[1,1]], curveB:[[.05,0],[1,1]],
+   wb:[1,1,1], gain:[1,1,1], sat:1, soft:.27,
+   shTint:[-.019,.005,.014], midTint:[0,0,0], hiTint:[0,0,0],
+   bands:{R:[0,-.08,-.04],O:[-3,-.08,-.02],Y:[0,-.22,0],G:[0,-.16,-.04],A:[-1,-.05,-.05],B:[-6,-.02,-.06],P:[-9,-.06,.02],M:[-6,-.17,-.06]},
+   grain:[.53,1.4,.65,.5] },
+ 'Fujifilm C200': { t:'A', d:'Mitad tonal cálida y amarillenta, negros levantados, medios brillantes y saturación contenida.',
+   curve:[[0,.075],[.07,.106],[.16,.184],[.35,.4],[.5,.55],[1,.99]], gain:[1,1,1], sat:1, soft:0,
+   shTint:[.008,-.005,-.004], midTint:[.019,.010,-.030], hiTint:[0,0,0],
+   bands:{R:[2,-.08,0],O:[2,-.02,.01],Y:[0,-.11,0],G:[-7,-.01,.02],A:[-1,-.10,-.03],B:[-1,-.05,-.05],P:[7,-.07,.02],M:[3,-.11,0]},
+   grain:[.46,.8,.5,.45] },
+ 'Lomography 800': { curve:[[0,.05],[.13,.165],[.5,.5],[1,1]], midTint:[.012,-.002,-.011],
+   bands:{R:[5,-.04,0],O:[2,0,.02],Y:[-1,-.10,0],G:[-9,-.04,0],A:[-1,-.04,-.03],B:[-4,0,-.01],P:[-3,-.06,.04],M:[3,-.11,0]} },
+};
+FILMS.forEach(f => Object.assign(f, PATCH4[f.n] || {}));
+
+// Parche 5: correcciones tras cruzar los datos con la transcripción.
+const PATCH5 = {
+ 'Gold 200': { hiTint:[.012,.005,-.012] },
+ 'CineStill 800T': { wb:[.97,1,1.03],
+   bands:{R:[2,-.02,-.04],O:[-1,-.04,-.02],Y:[0,-.22,0],G:[14,-.12,-.04],A:[4,-.05,-.05],B:[-6,-.02,-.06],P:[-9,-.06,.02],M:[-6,-.17,-.06]} },
+ // C200: se descarta el preset de Fujifilm_200 (en realidad Color Plus) y se vuelve al ajuste de tus capturas
+ 'Fujifilm C200': { t:'B', curve:null, curveR:null, curveG:null, curveB:null, midTint:[0,0,0],
+   d:'Aproximación a partir de capturas de referencia: Fuji natural, algo menos cálida que Kodak.',
+   lift:[.026,.028,.026], gain:[.995,1,1], contrast:.98, curveS:.1, sat:.88, soft:.15,
+   shTint:[-.006,.01,.002], hiTint:[.008,.004,-.004],
+   bands:{R:[3,-.04,0],Y:[-2,-.05,0],G:[6,0,-.03],B:[0,.04,-.03]}, grain:[.48,1,.5,.45] },
+};
+FILMS.forEach(f => Object.assign(f, PATCH5[f.n] || {}));
+
+// Parche 6: ajustes tras comparar con fotos de referencia (escaneos de laboratorio).
+const PATCH6 = {
+ 'Gold 200': { curve:[[0,.025],[.15,.16],[.4,.39],[.75,.78],[1,1]], sat:1.06, hiTint:[.016,.007,-.016] },
+ 'Portra 400': { curve:[[0,.03],[.15,.155],[.5,.5],[.85,.88],[1,1]], sat:1.06 },
+ 'Portra 160': { curve:[[0,.025],[.25,.24],[.5,.5],[.8,.83],[1,1]], sat:1.06 },
+ 'Portra 800': { sat:1.1 },
+ 'Ektar 100': { curve:[[0,0],[.15,.14],[.5,.55],[.75,.8],[1,1]], sat:1.14, shTint:[-.006,.004,.012],
+   bands:{R:[2,.08,0],O:[2,.04,0],Y:[0,-.08,0],G:[-3,-.05,.04],A:[2,-.04,-.02],B:[-2,.08,-.08],P:[-3,-.05,.06],M:[2,-.06,-.01]} },
+ 'Ultramax 400': { curve:[[0,.03],[.26,.25],[.5,.5],[1,1]], sat:1.08 },
+ 'Fujifilm C200': { lift:[.018,.02,.018], sat:.92 },
+ 'CineStill 800T': { wb:[.9,1.02,1.1], hiTint:[0,.004,0],
+   bands:{R:[2,-.02,-.04],O:[-1,-.04,-.02],Y:[0,-.22,0],G:[16,-.08,-.04],A:[4,-.02,-.05],B:[-6,-.02,-.06],P:[-9,-.04,.02],M:[-6,-.10,-.06]} },
+ 'Superia 400': { hiTint:[-.02,.012,.012], shTint:[-.008,.012,.012] },
+ 'Pro 400H': { hiTint:[.004,.010,-.006],
+   bands:{R:[2,-.04,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[14,.04,-.12],A:[4,.10,0],B:[-8,.10,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
+ 'HP5+': { contrast:1.2, curveS:.34 },
+ 'Tri-X 400': { contrast:1.1, curveS:.28 },
+};
+FILMS.forEach(f => Object.assign(f, PATCH6[f.n] || {}));
+
+// ---------- Curvas tonales (spline monótona) ----------
+function curveLUT(pts){
+  const n = pts.length, h = [], d = [], m = [];
+  for(let i = 0; i < n-1; i++){ h[i] = pts[i+1][0]-pts[i][0]; d[i] = (pts[i+1][1]-pts[i][1])/h[i]; }
+  m[0] = d[0]; m[n-1] = d[n-2];
+  for(let i = 1; i < n-1; i++) m[i] = d[i-1]*d[i] <= 0 ? 0 : (d[i-1]+d[i])/2;
+  for(let i = 0; i < n-1; i++){
+    if(d[i] === 0){ m[i] = 0; m[i+1] = 0; }
+    else {
+      const a = m[i]/d[i], b = m[i+1]/d[i], s = a*a + b*b;
+      if(s > 9){ const t = 3/Math.sqrt(s); m[i] = t*a*d[i]; m[i+1] = t*b*d[i]; }
+    }
+  }
+  const out = new Float32Array(256);
+  for(let k = 0; k < 256; k++){
+    const x = k/255; let y;
+    if(x <= pts[0][0]) y = pts[0][1];
+    else if(x >= pts[n-1][0]) y = pts[n-1][1];
+    else {
+      let i = 0; while(i < n-2 && x >= pts[i+1][0]) i++;
+      const t = (x-pts[i][0])/h[i], t2 = t*t, t3 = t2*t;
+      y = (2*t3-3*t2+1)*pts[i][1] + (t3-2*t2+t)*h[i]*m[i] + (-2*t3+3*t2)*pts[i+1][1] + (t3-t2)*h[i]*m[i+1];
+    }
+    out[k] = y < 0 ? 0 : y > 1 ? 1 : y;
+  }
+  return out;
+}
+function buildLut(f){
+  const M = curveLUT(f.curve);
+  const R = f.curveR ? curveLUT(f.curveR) : null, G = f.curveG ? curveLUT(f.curveG) : null, B = f.curveB ? curveLUT(f.curveB) : null;
+  const px = new Uint8Array(256*4);
+  for(let k = 0; k < 256; k++){
+    const v = M[k], idx = Math.round(v*255);
+    px[k*4]   = Math.round((R ? R[idx] : v)*255);
+    px[k*4+1] = Math.round((G ? G[idx] : v)*255);
+    px[k*4+2] = Math.round((B ? B[idx] : v)*255);
+    px[k*4+3] = 255;
+  }
+  return px;
+}
 
 const VS = `#version 300 es
 in vec2 p; out vec2 uv;
@@ -212,7 +421,9 @@ const FS = `#version 300 es
 precision highp float; precision highp int;
 in vec2 uv; out vec4 o;
 uniform sampler2D tex; uniform vec2 res; uniform float seed;
-uniform vec3 wb, lift, gain, shTint, hiTint, mono, halCol;
+uniform sampler2D htex;
+uniform sampler2D lut; uniform float useLut;
+uniform vec3 wb, lift, gain, shTint, hiTint, midTint, mono, halCol;
 uniform float bw, contrast, sCurve, sat, soft;
 uniform vec3 bands[8];
 uniform float grainAmt, grainSize, grainChroma, grainRough, halAmt, halRad, strength, vignette, leak;
@@ -223,6 +434,11 @@ const float WID[8] = float[8](45.,30.,60.,60.,60.,60.,40.,45.);
 vec3 toLin(vec3 c){ return pow(c, vec3(2.2)); }
 vec3 toGam(vec3 c){ return pow(max(c, vec3(0.)), vec3(1./2.2)); }
 float luma(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
+
+vec3 lutA(vec3 c){
+  vec3 t = clamp(c, 0., 1.)*(255./256.) + .5/256.;
+  return vec3(texture(lut, vec2(t.r, .5)).r, texture(lut, vec2(t.g, .5)).g, texture(lut, vec2(t.b, .5)).b);
+}
 
 vec3 rgb2hsv(vec3 c){
   vec4 K = vec4(0., -1./3., 2./3., -1.);
@@ -256,31 +472,35 @@ void main(){
   vec3 base = mix(src, textureLod(tex, uv, 1.0).rgb, soft);
   vec3 lin = toLin(base) * wb;
 
-  // Halation en luz lineal, solo a partir de luces casi quemadas
+  // Halation: se lee de una textura que solo contiene luces casi quemadas (htex)
   if(halAmt > .001){
-    vec2 ts = vec2(textureSize(tex, 0));
-    float lod = clamp(log2(halRad * max(ts.x, ts.y) * .35), 1., 9.);
+    vec2 hsz = vec2(textureSize(htex, 0));
+    float lod = clamp(log2(halRad * max(hsz.x, hsz.y) * .35), 1., 8.);
     vec3 acc = vec3(0.);
     for(int i = 0; i < 12; i++){
       float a = float(i) * 2.39996;
       float r = halRad * sqrt((float(i) + .5)/12.);
       vec2 off = vec2(cos(a), sin(a) * res.x/res.y) * r;
-      vec3 s = toLin(textureLod(tex, uv + off, lod).rgb);
-      acc += s * smoothstep(.85, .99, luma(s));
+      acc += toLin(textureLod(htex, uv + off, lod).rgb);
     }
-    lin += (acc/12.) * halCol * halAmt * 1.5;
+    float hl = luma(acc/12.);
+    lin += vec3(hl) * halCol * halAmt * 4.;
   }
 
   vec3 c = toGam(lin);
   if(bw > .5) c = vec3(dot(c, mono));
 
-  // Curva: contraste, S suave y negro levantado
-  c = clamp((c - .5)*contrast + .5, 0., 1.);
-  c = mix(c, c*c*(3. - 2.*c), sCurve);
+  // Curva tonal: LUT por canal si la película la tiene; si no, contraste + S + negro levantado
+  if(useLut > .5){
+    c = lutA(c);
+  } else {
+    c = clamp((c - .5)*contrast + .5, 0., 1.);
+    c = mix(c, c*c*(3. - 2.*c), sCurve);
+  }
   float l = luma(c);
-  c += shTint*pow(1.-l, 2.) + hiTint*l*l;
+  c += shTint*pow(1.-l, 2.) + hiTint*l*l + midTint*4.*l*(1.-l);
   c *= gain;
-  c = lift + c*(1. - lift);
+  if(useLut < .5) c = lift + c*(1. - lift);
 
   // Color por bandas de matiz
   vec3 hsv = rgb2hsv(clamp(c, 0., 1.));
@@ -348,10 +568,43 @@ const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc);
 gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
-['tex','res','seed','wb','lift','gain','shTint','hiTint','mono','halCol','bw','contrast','sCurve','sat','soft','bands',
+['htex','lut','useLut','midTint','tex','res','seed','wb','lift','gain','shTint','hiTint','mono','halCol','bw','contrast','sCurve','sat','soft','bands',
  'grainAmt','grainSize','grainChroma','grainRough','halAmt','halRad','strength','vignette','leak']
  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
 const tex = gl.createTexture();
+const htex = gl.createTexture();
+
+// Textura 256x1 con la curva tonal de la película
+const lutTex = gl.createTexture();
+gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, lutTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(256*4));
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.activeTexture(gl.TEXTURE0);
+function uploadLut(f){
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, lutTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, buildLut(f));
+  gl.activeTexture(gl.TEXTURE0);
+}
+
+// Textura pequeña con solo las luces casi quemadas, para el halation
+function buildHalo(src){
+  const k = Math.min(1, 1024/Math.max(src.width, src.height));
+  const w = Math.max(1, Math.round(src.width*k)), h = Math.max(1, Math.round(src.height*k));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d', { willReadFrequently:true });
+  x.drawImage(src, 0, 0, w, h);
+  const id = x.getImageData(0, 0, w, h), d = id.data;
+  for(let i = 0; i < d.length; i += 4){
+    const m = Math.max(d[i], d[i+1], d[i+2]) / 255;
+    let t = (m - HT0) / (HT1 - HT0); t = t < 0 ? 0 : t > 1 ? 1 : t; t = t*t*(3 - 2*t);
+    d[i] *= t; d[i+1] *= t; d[i+2] *= t; d[i+3] = 255;
+  }
+  x.putImageData(id, 0, 0);
+  return c;
+}
 
 let cur = FILMS[0], seed = Math.floor(Math.random()*1e6), iw = 0, ih = 0, ready = false;
 const v3 = x => Array.isArray(x) ? x : [x, x, x];
@@ -360,7 +613,9 @@ const bandsArr = o => { const a = new Float32Array(24); for(const k in o) a.set(
 function draw(w, h){
   glc.width = w; glc.height = h; gl.viewport(0, 0, w, h);
   const p = cur;
-  gl.uniform1i(U.tex, 0); gl.uniform2f(U.res, w, h); gl.uniform1f(U.seed, seed);
+  gl.uniform1i(U.tex, 0); gl.uniform1i(U.htex, 1); gl.uniform1i(U.lut, 2);
+  gl.uniform1f(U.useLut, p.curve ? 1 : 0); gl.uniform3fv(U.midTint, p.midTint);
+  gl.uniform2f(U.res, w, h); gl.uniform1f(U.seed, seed);
   gl.uniform3fv(U.wb, p.wb); gl.uniform3fv(U.lift, v3(p.lift)); gl.uniform3fv(U.gain, p.gain);
   gl.uniform3fv(U.shTint, p.shTint); gl.uniform3fv(U.hiTint, p.hiTint); gl.uniform3fv(U.mono, p.mono);
   gl.uniform3fv(U.halCol, p.hal[2]);
@@ -393,6 +648,7 @@ function render(){
   draw(w, h);
   out.width = w; out.height = h; ctx.drawImage(glc, 0, 0);
   if($('date').checked) stamp(ctx, w, h);
+  $('hudres').textContent = `Prev ${w}×${h}`;
 }
 let pending = false;
 const req = () => { if(pending) return; pending = true; requestAnimationFrame(() => { pending = false; render(); }); };
@@ -412,8 +668,17 @@ function loadImage(file){
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.generateMipmap(gl.TEXTURE_2D);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, htex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, buildHalo(c));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.activeTexture(gl.TEXTURE0);
     iw = w; ih = h; ready = true; URL.revokeObjectURL(url);
     $('hint').style.display = 'none'; out.style.display = 'block'; $('save').disabled = false;
+    $('hudstate').textContent = '● Live'; $('hudstate').classList.add('live');
     render();
   };
   im.src = url;
@@ -434,18 +699,64 @@ function save(){
   }, 'image/jpeg', .95);
 }
 
-// UI
+// ---------- UI ----------
+// Display de siete segmentos para el número de canal
+const hp = (x0, x1, y) => `${x0+5},${y} ${x0+9},${y-4.5} ${x1-9},${y-4.5} ${x1-5},${y} ${x1-9},${y+4.5} ${x0+9},${y+4.5}`;
+const vp = (x, y0, y1) => `${x},${y0+5} ${x+4.5},${y0+9} ${x+4.5},${y1-9} ${x},${y1-5} ${x-4.5},${y1-9} ${x-4.5},${y0+9}`;
+const SEGS = { a:hp(4,56,6), b:vp(54,6,50), c:vp(54,50,94), d:hp(4,56,94), e:vp(6,50,94), f:vp(6,6,50), g:hp(4,56,50) };
+const SMAP = ['abcdef','bc','abdeg','abcdg','bcfg','acdfg','acdefg','abc','abcdefg','abcdfg'];
+const digit = n => '<svg viewBox="0 0 60 100">' + Object.keys(SEGS).map(k =>
+  `<polygon points="${SEGS[k]}" class="${SMAP[n].includes(k) ? 'on' : ''}"/>`).join('') + '</svg>';
+const setSeg = i => { const s = String(i).padStart(2, '0'); $('seg').innerHTML = digit(+s[0]) + digit(+s[1]); };
+const TSHORT = { A:'Medido', B:'Referencia', C:'Provisional' };
+
 const fr = $('films');
-function pick(f, btn){
+function pick(f, btn, i){
   cur = f; [...fr.children].forEach(b => b.className = ''); btn.className = 'on';
+  if(f.curve) uploadLut(f);
   $('info').textContent = `${TIER[f.t][0]} ${f.n}: ${f.d} (${TIER[f.t][1]})`;
+  setSeg(i + 1);
+  $('nm').textContent = f.n;
+  $('tier').textContent = `${TIER[f.t][0]} ${TSHORT[f.t]}`;
+  $('hudfilm').textContent = `CH ${String(i+1).padStart(2,'0')} · ${f.n}`;
   req();
 }
 FILMS.forEach((f, i) => {
-  const b = document.createElement('button'); b.textContent = `${TIER[f.t][0]} ${f.n}`;
-  b.onclick = () => pick(f, b); fr.appendChild(b); if(i === 0) pick(f, b);
+  const b = document.createElement('button');
+  b.innerHTML = `<i>${String(i+1).padStart(2,'0')}</i>${f.n}<u>${TIER[f.t][0]}</u>`;
+  b.onclick = () => pick(f, b, i); fr.appendChild(b); if(i === 0) pick(f, b, i);
 });
-['strength','grain','hal','vig','leak','date'].forEach(id => $(id).addEventListener('input', req));
+
+// Lecturas numéricas y barras segmentadas
+const RG = ['strength','grain','hal','vig','leak'];
+function syncUI(){
+  RG.forEach(id => {
+    const e = $(id);
+    e.style.setProperty('--p', ((e.value - e.min) / (e.max - e.min) * 100) + '%');
+    $('v_' + id).textContent = String(e.value).padStart(3, '0');
+  });
+  $('v_date').textContent = $('date').checked ? 'ON' : 'OFF';
+}
+['strength','grain','hal','vig','leak','date'].forEach(id => {
+  $(id).addEventListener('input', req);
+  $(id).addEventListener('input', syncUI);
+  $(id).addEventListener('change', syncUI);
+});
+syncUI();
+
+// Temas de fósforo
+const THEMES = ['nerv','amber','ice','vfd'];
+let ti = 0;
+try { ti = Math.max(0, THEMES.indexOf(localStorage.getItem('theme'))); } catch(e){}
+function setTheme(i){
+  ti = i % THEMES.length;
+  document.documentElement.dataset.theme = THEMES[ti];
+  $('theme').textContent = '◐ ' + THEMES[ti];
+  try { localStorage.setItem('theme', THEMES[ti]); } catch(e){}
+}
+$('theme').onclick = () => setTheme(ti + 1);
+setTheme(ti);
+
 $('file').addEventListener('change', e => e.target.files[0] && loadImage(e.target.files[0]));
 $('reseed').onclick = () => { seed = Math.floor(Math.random()*1e6); req(); };
 $('save').onclick = save;
