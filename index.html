@@ -195,6 +195,15 @@ FILMS.forEach(f => Object.assign(f, PATCH2[f.n] || {}));
 // Grano más visible en color (solo películas no B/N)
 FILMS.forEach(f => { if(!f.bw) f.grain = [f.grain[0]*1.5, f.grain[1], f.grain[2], f.grain[3]]; });
 
+// Parche 3: menos halation sobre superficies claras, Portra menos grises
+const PATCH3 = {
+ 'CineStill 800T': { hal:[.4,.03,[1,.28,.1]] },
+ 'CineStill 400D': { hal:[.22,.026,[1,.32,.12]] },
+ 'Portra 400':     { sat:.94, lift:[.034,.032,.034] },
+ 'Portra 160':     { sat:.96 },
+};
+FILMS.forEach(f => Object.assign(f, PATCH3[f.n] || {}));
+
 const VS = `#version 300 es
 in vec2 p; out vec2 uv;
 void main(){ uv = p*.5+.5; gl_Position = vec4(p,0.,1.); }`;
@@ -257,7 +266,7 @@ void main(){
       float r = halRad * sqrt((float(i) + .5)/12.);
       vec2 off = vec2(cos(a), sin(a) * res.x/res.y) * r;
       vec3 s = toLin(textureLod(tex, uv + off, lod).rgb);
-      acc += s * smoothstep(.45, .95, luma(s));
+      acc += s * smoothstep(.85, .99, luma(s));
     }
     lin += (acc/12.) * halCol * halAmt * 1.5;
   }
