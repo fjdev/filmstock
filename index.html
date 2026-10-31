@@ -170,7 +170,7 @@ const PATCH = {
  'Tri-X 400':   { contrast:1.06, curveS:.2, grain:[.45,1.3,0,.7] },
  'Provia 100F': { sat:1.06, contrast:1.12, curveS:.32, shTint:[-.008,0,.014],
                   bands:{R:[0,.08,-.02],Y:[0,.06,0],G:[2,.03,-.03],B:[-2,.08,-.05]} },
- 'CineStill 800T': { wb:[.95,1.01,1.05], shTint:[-.014,.012,.02], hiTint:[.012,.004,-.006], hal:[1,.034,[1,.28,.1]] },
+ 'CineStill 800T': { wb:[.95,1.01,1.05], shTint:[-.014,.012,.02], hiTint:[.012,.004,-.006], hal:[2.2,.045,[1,.28,.1]] },
  'Superia 400': { contrast:1.1, sat:1.06, hiTint:[-.008,.004,.006],
                   bands:{R:[3,.08,0],O:[2,.06,0],Y:[-2,-.04,.01],G:[10,.02,-.06],A:[0,.04,-.03],B:[-2,.08,-.05],P:[4,0,0],M:[-4,.12,.03]} },
  'Pro 400H':    { lift:[.032,.036,.036], hiTint:[-.012,.012,.008],
@@ -195,11 +195,12 @@ FILMS.forEach(f => Object.assign(f, PATCH2[f.n] || {}));
 // Grano más visible en color (solo películas no B/N)
 FILMS.forEach(f => { if(!f.bw) f.grain = [f.grain[0]*1.5, f.grain[1], f.grain[2], f.grain[3]]; });
 
-// Parche 3: Portra menos grises. La halation ya se arregla con el umbral del shader.
+// Parche 3: Portra menos grises y más halation en las CineStill (el umbral del shader evita teñir paredes).
 // Para quitarlo, borra este bloque.
 const PATCH3 = {
- 'Portra 400': { sat:.94 },
- 'Portra 160': { sat:.96 },
+ 'Portra 400':     { sat:.94 },
+ 'Portra 160':     { sat:.96 },
+ 'CineStill 400D': { hal:[1.2,.036,[1,.32,.12]] },
 };
 FILMS.forEach(f => Object.assign(f, PATCH3[f.n] || {}));
 
