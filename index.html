@@ -31,56 +31,52 @@
   body { background: var(--bg); color: var(--cyan); font: 15px/1.3 var(--serif); -webkit-font-smoothing: antialiased; }
 
   .app { height: 100vh; height: 100dvh; max-width: 560px; margin: 0 auto;
-         display: grid; grid-template-rows: auto minmax(0,1fr) auto auto auto; gap: 12px;
-         padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px); }
+         display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; gap: 8px;
+         padding: calc(env(safe-area-inset-top) + 6px) 10px calc(env(safe-area-inset-bottom) + 10px); }
 
-  /* Marco doble azul */
   .box { position: relative; border: 1px solid var(--line);
          box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px var(--line-d), 0 0 18px rgba(42,120,255,.14); }
 
-  /* Cabecera */
-  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
-           padding: 0 2px 8px; border-bottom: 1px solid var(--line-d); }
-  .brand h1 { margin: 0; font: 400 36px/.95 var(--serif); color: var(--cyan); text-shadow: 0 0 14px rgba(143,230,255,.45); }
-  .brand h1 em { color: var(--green); text-shadow: 0 0 14px rgba(107,224,79,.45); }
-  .brand small { display: block; margin-top: 5px; font: 8px var(--mono); letter-spacing: .32em; color: var(--line); text-transform: uppercase; }
-  .alert { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--red);
-           background: rgba(255,77,54,.1); color: var(--red); font: 9px var(--mono); letter-spacing: .2em;
-           text-shadow: 0 0 6px rgba(255,77,54,.6); box-shadow: 0 0 12px rgba(255,77,54,.18); white-space: nowrap; }
-  .alert b { font: 400 22px/1 var(--serif); letter-spacing: .02em; border: 1px solid rgba(255,77,54,.6); padding: 2px 6px; }
+  /* Cabecera compacta */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+           padding: 0 2px 5px; border-bottom: 1px solid var(--line-d); }
+  h1 { margin: 0; font: 400 26px/1 var(--serif); color: var(--cyan); text-shadow: 0 0 12px rgba(143,230,255,.45); }
+  h1 em { color: var(--green); text-shadow: 0 0 12px rgba(107,224,79,.45); }
+  .alert { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border: 1px solid var(--red);
+           background: rgba(255,77,54,.1); color: var(--red); font: 8px var(--mono); letter-spacing: .2em;
+           text-shadow: 0 0 6px rgba(255,77,54,.6); box-shadow: 0 0 10px rgba(255,77,54,.18); white-space: nowrap; }
+  .alert b { font: 400 16px/1 var(--serif); letter-spacing: .02em; border: 1px solid rgba(255,77,54,.6); padding: 1px 5px; }
 
   /* Visor */
-  .viewer { min-height: 0; display: flex; align-items: center; justify-content: center; padding: 26px 16px 24px;
+  .viewer { min-height: 0; display: flex; align-items: center; justify-content: center; padding: 18px 8px 16px;
             overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-  .viewer::before, .viewer::after { content: ''; position: absolute; width: 16px; height: 16px; border: 2px solid var(--cyan); opacity: .8; }
-  .viewer::before { top: 6px; left: 6px; border-right: 0; border-bottom: 0; }
-  .viewer::after { bottom: 6px; right: 6px; border-left: 0; border-top: 0; }
+  .viewer::before, .viewer::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid var(--cyan); opacity: .8; }
+  .viewer::before { top: 4px; left: 4px; border-right: 0; border-bottom: 0; }
+  .viewer::after { bottom: 4px; right: 4px; border-left: 0; border-top: 0; }
   #out { display: none; width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 1; }
-  .cr { position: absolute; font: 300 18px/1 var(--mono); color: var(--line); opacity: .8; pointer-events: none; }
-  .cr.a { top: 26px; left: 22px; } .cr.b { top: 26px; right: 22px; } .cr.c { bottom: 24px; left: 22px; } .cr.d { bottom: 24px; right: 22px; }
-  .hud { position: absolute; z-index: 2; font: 9px var(--mono); letter-spacing: .2em; text-transform: uppercase;
+  .hud { position: absolute; z-index: 2; font: 8px var(--mono); letter-spacing: .2em; text-transform: uppercase;
          color: var(--cyan-d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 58%; }
-  .tl { top: 9px; left: 28px; } .tr { top: 9px; right: 28px; } .bl { bottom: 7px; left: 28px; } .br { bottom: 7px; right: 28px; }
+  .tl { top: 5px; left: 22px; } .tr { top: 5px; right: 22px; } .bl { bottom: 4px; left: 22px; } .br { bottom: 4px; right: 22px; }
   .hud.red { color: var(--red); text-shadow: 0 0 6px rgba(255,77,54,.6); }
   .live { animation: bl 1.4s steps(1) infinite; }
   @keyframes bl { 50% { opacity: .25; } }
-  #empty { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: none; }
-  #empty svg { width: min(62%, 250px); height: auto; filter: drop-shadow(0 0 6px rgba(107,224,79,.35)); }
-  #empty p { margin: 0; font: 10px var(--mono); letter-spacing: .28em; color: var(--cyan-d); text-transform: uppercase; }
+  #empty { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+           gap: 6px; pointer-events: none; }
+  #empty svg { flex: 1; min-height: 0; width: 100%; max-width: 440px; }
+  #empty p { flex: none; margin: 0; font: 9px var(--mono); letter-spacing: .28em; color: var(--cyan-d); text-transform: uppercase; }
   #empty p::after { content: '_'; animation: bl 1s steps(1) infinite; }
-  /* Aviso de cambio de canal */
-  .flash { position: absolute; z-index: 3; top: 30px; left: 50%; transform: translateX(-50%);
-           display: flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid var(--red);
-           background: rgba(10,21,23,.85); color: var(--red); font: 10px var(--mono); letter-spacing: .2em;
+  .flash { position: absolute; z-index: 3; top: 24px; left: 50%; transform: translateX(-50%);
+           display: flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid var(--red);
+           background: rgba(10,21,23,.85); color: var(--red); font: 9px var(--mono); letter-spacing: .2em;
            text-transform: uppercase; text-shadow: 0 0 6px rgba(255,77,54,.6); white-space: nowrap;
            opacity: 0; transition: opacity .3s; pointer-events: none; }
-  .flash b { font: 400 22px/1 var(--serif); letter-spacing: .02em; }
+  .flash b { font: 400 20px/1 var(--serif); letter-spacing: .02em; }
   .flash.show { opacity: 1; transition: none; }
 
   /* Botones */
   button, .btn {
-    font: 400 20px/1 var(--serif); color: var(--cyan); background: rgba(42,120,255,.07);
-    border: 1px solid var(--line); border-radius: 0; padding: 10px 8px; text-align: center; cursor: pointer;
+    font: 400 19px/1 var(--serif); color: var(--cyan); background: rgba(42,120,255,.07);
+    border: 1px solid var(--line); border-radius: 0; padding: 9px 8px; text-align: center; cursor: pointer;
     text-shadow: 0 0 6px rgba(143,230,255,.45); box-shadow: inset 0 0 10px rgba(42,120,255,.18);
   }
   button:active, .btn:active { background: rgba(143,230,255,.16); }
@@ -90,18 +86,22 @@
   .actions .btn, .actions button { display: flex; align-items: center; justify-content: center; }
   .filmctl { display: grid; grid-template-columns: 34px minmax(0,1fr) 34px; }
   .filmctl .arr { font: 400 28px/1 var(--serif); padding: 0; }
-  #filmBtn { flex-direction: column; gap: 4px; padding: 7px 4px; border-left: 0; border-right: 0; min-width: 0; }
+  #filmBtn { flex-direction: column; gap: 3px; padding: 6px 4px; border-left: 0; border-right: 0; min-width: 0; }
   #filmBtn small { font: 8px var(--mono); letter-spacing: .14em; color: var(--red); text-transform: uppercase;
                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
                    text-shadow: 0 0 6px rgba(255,77,54,.5); }
 
-  /* Paneles */
-  .panel { padding: 14px 12px 10px; }
-  .panel h2 { position: absolute; top: -7px; left: 12px; margin: 0; padding: 0 6px; background: var(--bg);
-              font: 400 9px var(--mono); letter-spacing: .3em; color: var(--line); text-transform: uppercase; z-index: 1; }
+  /* Panel con pestañas: Parameters / Film data */
+  .tabs { padding: 16px 12px 10px; }
+  .tabbar { position: absolute; top: -10px; left: 10px; display: flex; gap: 6px; z-index: 1; }
+  .tab { font: 9px var(--mono); letter-spacing: .24em; text-transform: uppercase; padding: 4px 9px;
+         background: var(--bg); color: var(--line); border: 1px solid var(--line-d); box-shadow: none; text-shadow: none; }
+  .tab.on { background: var(--cyan); color: #061216; border-color: var(--cyan); box-shadow: 0 0 10px rgba(143,230,255,.4); }
+  .panes { display: grid; }
+  .pane { grid-area: 1 / 1; visibility: hidden; min-width: 0; }
+  .pane.on { visibility: visible; }
 
-  /* Parámetros: barras segmentadas */
-  .rows { display: grid; gap: 7px; }
+  .rows { display: grid; gap: 6px; }
   .row { display: grid; grid-template-columns: 30px 70px minmax(0,1fr) 32px; align-items: center; gap: 8px;
          font: 9px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cyan-d); transition: opacity .2s; }
   .row b { text-align: right; font: 600 11px var(--mono); letter-spacing: .05em; color: var(--cyan);
@@ -132,26 +132,25 @@
             text-shadow: 0 0 6px rgba(255,90,0,.8); text-transform: none; }
   .row.off .stampv { opacity: .3; }
 
-  /* Ficha */
   .ihead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  #iname { font: 400 26px/1 var(--serif); color: var(--cyan); text-shadow: 0 0 10px rgba(143,230,255,.45);
+  #iname { font: 400 22px/1 var(--serif); color: var(--cyan); text-shadow: 0 0 10px rgba(143,230,255,.45);
            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tag { font: 9px var(--mono); letter-spacing: .14em; text-transform: uppercase; border: 1px solid var(--line);
+  .tag { font: 8px var(--mono); letter-spacing: .14em; text-transform: uppercase; border: 1px solid var(--line);
          padding: 3px 6px; white-space: nowrap; color: var(--cyan); }
   #itier { color: var(--green); border-color: rgba(107,224,79,.6); text-shadow: 0 0 6px rgba(107,224,79,.5); }
-  .meta { display: flex; gap: 6px; margin: 7px 0 6px; flex-wrap: wrap; }
-  #idesc, .uses { margin: 0; line-height: 1.22; color: var(--cyan-d); overflow: hidden;
+  .meta { display: flex; gap: 5px; margin: 6px 0 5px; flex-wrap: wrap; }
+  #idesc, .uses { margin: 0; line-height: 1.2; color: var(--cyan-d); overflow: hidden;
                   display: -webkit-box; -webkit-box-orient: vertical; }
-  #idesc { font-size: 15px; -webkit-line-clamp: 3; }
-  .uses { margin-top: 5px; font-size: 14px; -webkit-line-clamp: 2; }
-  .uses em { font: normal 9px var(--mono); letter-spacing: .2em; color: var(--green); margin-right: 4px; }
+  #idesc { font-size: 14px; -webkit-line-clamp: 3; }
+  .uses { margin-top: 4px; font-size: 13px; -webkit-line-clamp: 2; }
+  .uses em { font: normal 8px var(--mono); letter-spacing: .2em; color: var(--green); margin-right: 4px; }
 
-  /* Lista de películas: abajo, sin tapar la foto */
+  /* Lista de películas */
   .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: center;
            padding: 0 10px calc(env(safe-area-inset-bottom) + 10px); pointer-events: none; }
   .sheet[hidden] { display: none; }
-  .sheet-in { pointer-events: auto; width: 100%; max-width: 540px; max-height: 46dvh; overflow: auto;
-              background: var(--bg); padding: 12px 12px 12px; }
+  .sheet-in { pointer-events: auto; width: 100%; max-width: 540px; max-height: 38dvh; overflow: auto;
+              background: var(--bg); padding: 12px; }
   .sheet-h { display: flex; justify-content: space-between; align-items: center; position: sticky; top: -12px;
              background: var(--bg); padding: 4px 0 2px; z-index: 1; }
   .sheet-h span { font: 400 22px var(--serif); text-shadow: 0 0 10px rgba(143,230,255,.45); }
@@ -177,36 +176,17 @@
 <body>
 <div class="app">
   <header>
-    <div class="brand"><h1>Film <em>Stock</em></h1><small>Analog image unit // MK.2</small></div>
+    <h1>Film <em>Stock</em></h1>
     <div class="alert"><b id="chan">C01</b><span id="state">NO SIGNAL</span></div>
   </header>
 
   <div class="viewer box" id="stage">
-    <span class="cr a">+</span><span class="cr b">+</span><span class="cr c">+</span><span class="cr d">+</span>
     <div class="hud tl" id="hudfilm">—</div>
     <div class="hud tr" id="hudres">—</div>
-    <div class="hud bl">Swipe ⇆ film · hold ▸ orig</div>
+    <div class="hud bl">Swipe ⇆ · hold ▸ orig</div>
     <div class="hud br" id="hudstate">Stby</div>
     <div class="flash" id="flash"><b id="fch">C01</b><span id="fnm"></span></div>
-    <div id="empty">
-      <svg viewBox="0 0 200 150" aria-hidden="true">
-        <g stroke="#2a78ff" fill="none" stroke-width=".8" opacity=".85">
-          <path d="M20 120 L100 95 L180 120 L100 145 Z"/>
-          <path d="M40 113.8 L120 138.8 M60 107.5 L140 132.5 M80 101.3 L160 126.3"/>
-          <path d="M40 126.3 L120 101.3 M60 132.5 L140 107.5 M80 138.8 L160 113.8"/>
-        </g>
-        <g stroke="#6be04f" fill="none" stroke-width="1">
-          <circle cx="100" cy="58" r="38"/>
-          <ellipse cx="100" cy="58" rx="24" ry="38"/>
-          <ellipse cx="100" cy="58" rx="9" ry="38"/>
-          <path d="M62 58 H138 M66.5 40 H133.5 M66.5 76 H133.5 M79.5 26 H120.5 M79.5 90 H120.5"/>
-          <path d="M100 96 V112"/>
-          <ellipse cx="100" cy="113" rx="12" ry="3"/>
-        </g>
-        <path d="M150 30 Q168 70 186 128" stroke="#ff4d36" fill="none" stroke-width=".9" stroke-dasharray="3 3"/>
-      </svg>
-      <p>No signal · import a photo</p>
-    </div>
+    <div id="empty"></div>
     <canvas id="out"></canvas>
   </div>
 
@@ -221,30 +201,35 @@
     <button id="save" type="button" disabled>Save</button>
   </nav>
 
-  <section class="panel box">
-    <h2>Parameters</h2>
-    <div class="rows">
-      <div class="row"><span></span><span>Strength</span>
-        <input type="range" id="strength" min="0" max="100" value="100"><b id="v_strength">100</b></div>
-      <div class="row" id="r_grain"><button class="sw" data-k="grain" type="button" aria-label="Grain"></button>
-        <span>Grain</span><div class="bar"></div><b></b></div>
-      <div class="row" id="r_hal"><button class="sw" data-k="hal" type="button" aria-label="Halation"></button>
-        <span>Halation</span><div class="bar"></div><b></b></div>
-      <div class="row" id="r_vig"><button class="sw" data-k="vig" type="button" aria-label="Vignette"></button>
-        <span>Vignette</span><div class="bar"></div><b></b></div>
-      <div class="row" id="r_leak"><button class="sw" data-k="leak" type="button" aria-label="Light leak"></button>
-        <span>Leak</span><div class="bar"></div><b></b></div>
-      <div class="row" id="r_date"><button class="sw" data-k="date" type="button" aria-label="Date"></button>
-        <span>Date</span><span class="stampv" id="stampv"></span><b></b></div>
+  <section class="tabs box">
+    <div class="tabbar">
+      <button class="tab on" type="button" data-t="params">Parameters</button>
+      <button class="tab" type="button" data-t="info">Film data</button>
     </div>
-  </section>
-
-  <section class="panel box">
-    <h2>Film data</h2>
-    <div class="ihead"><span id="iname">—</span><span class="tag" id="itier">—</span></div>
-    <div class="meta"><span class="tag" id="iiso">—</span><span class="tag" id="itype">—</span></div>
-    <p id="idesc"></p>
-    <p class="uses"><em>IDEAL ▸</em><span id="iuses"></span></p>
+    <div class="panes">
+      <div class="pane on" id="p_params">
+        <div class="rows">
+          <div class="row"><span></span><span>Strength</span>
+            <input type="range" id="strength" min="0" max="100" value="100"><b id="v_strength">100</b></div>
+          <div class="row" id="r_grain"><button class="sw" data-k="grain" type="button" aria-label="Grain"></button>
+            <span>Grain</span><div class="bar"></div><b></b></div>
+          <div class="row" id="r_hal"><button class="sw" data-k="hal" type="button" aria-label="Halation"></button>
+            <span>Halation</span><div class="bar"></div><b></b></div>
+          <div class="row" id="r_vig"><button class="sw" data-k="vig" type="button" aria-label="Vignette"></button>
+            <span>Vignette</span><div class="bar"></div><b></b></div>
+          <div class="row" id="r_leak"><button class="sw" data-k="leak" type="button" aria-label="Light leak"></button>
+            <span>Leak</span><div class="bar"></div><b></b></div>
+          <div class="row" id="r_date"><button class="sw" data-k="date" type="button" aria-label="Date"></button>
+            <span>Date</span><span class="stampv" id="stampv"></span><b></b></div>
+        </div>
+      </div>
+      <div class="pane" id="p_info">
+        <div class="ihead"><span id="iname">—</span><span class="tag" id="itier">—</span></div>
+        <div class="meta"><span class="tag" id="iiso">—</span><span class="tag" id="itype">—</span><span class="tag" id="iproc">—</span></div>
+        <p id="idesc"></p>
+        <p class="uses"><em>IDEAL ▸</em><span id="iuses"></span></p>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -532,40 +517,41 @@ const PATCH9 = {
 };
 FILMS.forEach(f => Object.assign(f, PATCH9[f.n] || {}));
 
-// Parche 10: datos de interfaz. Viñeteado y fuga propios de cada película, grupo, ISO, tipo y usos.
+// Parche 10: datos de interfaz. Viñeteado y fuga propios, grupo, ISO, tipo, proceso de revelado y usos.
+const C41 = 'C-41 · 37.8 °C · 3\'15"';
 const PATCH10 = {
- 'Gold 200':       { g:'Kodak', iso:200, type:'Negativo color', vig:.18,
+ 'Gold 200':       { g:'Kodak', iso:200, type:'Negativo color', proc:C41, vig:.18,
                      uses:'Calle con sol, verano, viajes y vegetación; el look clásico de foto de carrete.' },
- 'Ultramax 400':   { g:'Kodak', iso:400, type:'Negativo color', vig:.18,
+ 'Ultramax 400':   { g:'Kodak', iso:400, type:'Negativo color', proc:C41, vig:.18,
                      uses:'Todoterreno: días nublados, interiores luminosos, calle y piel.' },
- 'Portra 160':     { g:'Kodak', iso:160, type:'Negativo profesional', vig:.08,
+ 'Portra 160':     { g:'Kodak', iso:160, type:'Negativo profesional', proc:C41, vig:.08,
                      uses:'Retrato y bodas con luz de día, paisaje suave, look pastel limpio.' },
- 'Portra 800':     { g:'Kodak', iso:800, type:'Negativo profesional', vig:.12,
+ 'Portra 800':     { g:'Kodak', iso:800, type:'Negativo profesional', proc:C41, vig:.12,
                      uses:'Poca luz, interiores y atardecer; retrato con más contraste y grano.' },
- 'Ektar 100':      { g:'Saturadas', iso:100, type:'Negativo profesional', vig:.1,
+ 'Ektar 100':      { g:'Saturadas', iso:100, type:'Negativo profesional', proc:C41, vig:.1,
                      uses:'Paisaje, cielos, arquitectura y coches; poco favorecedora en piel.' },
- 'Velvia 100':     { g:'Saturadas', iso:100, type:'Diapositiva', vig:.14,
+ 'Velvia 100':     { g:'Saturadas', iso:100, type:'Diapositiva', proc:'E-6 · 38 °C · 6\'00"', vig:.14,
                      uses:'Paisaje y atardeceres con buena luz, color extremo; dura en piel.' },
- 'Superia 400':    { label:'Superia X-TRA 400', g:'Fuji', iso:400, type:'Negativo color', vig:.15,
+ 'Superia 400':    { label:'Superia X-TRA 400', g:'Fuji', iso:400, type:'Negativo color', proc:C41, vig:.15,
                      uses:'Calle de día y viajes; color limpio y natural con verdes fríos.' },
- 'Fujifilm C200':  { g:'Fuji', iso:200, type:'Negativo color', vig:.15,
+ 'Fujifilm C200':  { g:'Fuji', iso:200, type:'Negativo color', proc:C41, vig:.15,
                      uses:'Día a día, parques y luz suave; tonos naturales y aire claro.' },
- 'Pro 400H':       { g:'Fuji', iso:400, type:'Negativo profesional', vig:.08,
+ 'Pro 400H':       { g:'Fuji', iso:400, type:'Negativo profesional', proc:C41, vig:.08,
                      uses:'Retrato, bodas y moda; pastel luminoso, mejor algo sobreexpuesta.' },
- 'CineStill 400D': { g:'Cine', iso:400, type:'Cine · luz día', vig:.12,
+ 'CineStill 400D': { g:'Cine', iso:400, type:'Cine · luz día', proc:C41, vig:.12,
                      uses:'Hora dorada, atardecer y retrato; aspecto de cine versátil.' },
- 'CineStill 800T': { g:'Cine', iso:800, type:'Cine · tungsteno', vig:.14,
+ 'CineStill 800T': { g:'Cine', iso:800, type:'Cine · tungsteno', proc:C41, vig:.14,
                      uses:'Noche urbana, neones, farolas e interiores con luz cálida.' },
- 'Lomography 800': { g:'Lo-fi', iso:800, type:'Negativo color', vig:.35, leak:.7,
+ 'Lomography 800': { g:'Lo-fi', iso:800, type:'Negativo color', proc:C41, vig:.35, leak:.7,
                      uses:'Fiestas, flash, interiores y diario desenfadado; estética de desechable.' },
- 'Tri-X 400':      { g:'B/N', iso:400, type:'Blanco y negro', vig:.18,
+ 'Tri-X 400':      { g:'B/N', iso:400, type:'Blanco y negro', proc:'D-76 · 20 °C · 6\'45"', vig:.18,
                      uses:'Calle, documental y retrato con dramatismo; aguanta forzado a 800.' },
- 'HP5+':           { g:'B/N', iso:400, type:'Blanco y negro', vig:.12,
+ 'HP5+':           { g:'B/N', iso:400, type:'Blanco y negro', proc:'D-76 · 20 °C · 7\'30"', vig:.12,
                      uses:'Calle y retrato versátil; grises equilibrados, se fuerza con facilidad.' },
- 'Fomapan 200':    { g:'B/N', iso:200, type:'Blanco y negro', vig:.2,
+ 'Fomapan 200':    { g:'B/N', iso:200, type:'Blanco y negro', proc:'D-76 · 20 °C · 6\'00"', vig:.2,
                      uses:'Calle con sol y textura; cielos oscuros, pieles claras y grano áspero.' },
 };
-FILMS.forEach(f => Object.assign(f, { vig:.15, leak:0 }, PATCH10[f.n] || {}));
+FILMS.forEach(f => Object.assign(f, { vig:.15, leak:0, proc:C41 }, PATCH10[f.n] || {}));
 
 // Selección final y orden de canales. Las películas que no están aquí siguen definidas arriba.
 const KEEP = ['Gold 200','Ultramax 400','Portra 160','Portra 800','Ektar 100','Velvia 100',
@@ -832,7 +818,6 @@ function draw(w, h){
   gl.uniform1f(U.bw, p.bw); gl.uniform1f(U.contrast, p.contrast); gl.uniform1f(U.sCurve, p.curveS);
   gl.uniform1f(U.sat, p.sat); gl.uniform1f(U.soft, p.soft);
   gl.uniform3fv(U.bands, bandsArr(p.bands));
-  // La fuerza escala también la textura para que a 0 se vea el original.
   gl.uniform1f(U.grainAmt, on('grain') ? p.grain[0]*s : 0);
   gl.uniform1f(U.grainSize, p.grain[1]);
   gl.uniform1f(U.grainChroma, p.grain[2]); gl.uniform1f(U.grainRough, p.grain[3]);
@@ -874,6 +859,93 @@ function setState(){
   h.classList.toggle('red', holding);
 }
 
+// ---------- Laboratorio (pantalla sin foto) ----------
+// Curva característica de la película: sus curvas y tintes reales, con las diferencias entre canales exageradas ×4.
+function toneCurves(f){
+  const N = 40, ch = [[], [], []], lf = v3(f.lift);
+  const M = f.curve ? curveLUT(f.curve) : null;
+  const C = [f.curveR, f.curveG, f.curveB].map(c => c ? curveLUT(c) : null);
+  for(let i = 0; i <= N; i++){
+    const x = i/N; let ys;
+    if(M){ const v = M[Math.round(x*255)]; ys = C.map(c => c ? c[Math.round(v*255)] : v); }
+    else { let y = Math.min(1, Math.max(0, (x-.5)*f.contrast + .5)); y += (y*y*(3-2*y) - y)*f.curveS; ys = [y, y, y]; }
+    const l = (ys[0] + ys[1] + ys[2])/3;
+    ys = ys.map((y, c) => (y + f.shTint[c]*(1-l)*(1-l) + f.hiTint[c]*l*l + f.midTint[c]*4*l*(1-l)) * f.gain[c] * f.wb[c]);
+    if(!M) ys = ys.map((y, c) => lf[c] + y*(1 - lf[c]));
+    const a = (ys[0] + ys[1] + ys[2])/3;
+    ys.forEach((y, c) => ch[c].push(a + (y - a)*4));
+  }
+  return ch;
+}
+
+function labSVG(f){
+  const ch = toneCurves(f), X0 = 34, X1 = 282, Y0 = 318, Y1 = 218;
+  const P = a => a.map((y, i) => `${i ? 'L' : 'M'}${(X0 + (X1-X0)*i/(a.length-1)).toFixed(1)} ${(Y0 - (Y0-Y1)*Math.min(1, Math.max(0, y))).toFixed(1)}`).join(' ');
+  const curves = f.bw
+    ? `<path d="${P(ch[1])}" stroke="#e9f7ff" stroke-width="1.4" fill="none"/>`
+    : ['#ff4d36','#6be04f','#8fe6ff'].map((c, i) => `<path d="${P(ch[i])}" stroke="${c}" stroke-width="1.2" fill="none" opacity=".9"/>`).join('');
+  let grid = '';
+  for(let i = 1; i < 5; i++){ const x = X0 + (X1-X0)*i/5; grid += `<line x1="${x}" y1="${Y1}" x2="${x}" y2="${Y0}"/>`; }
+  for(let j = 1; j < 4; j++){ const y = Y0 - (Y0-Y1)*j/4; grid += `<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}"/>`; }
+  const gs = gsz(f), ra = 1.6 + gs*2.2, rb = ra*1.7;
+  let lat = '', bonds = '';
+  for(let i = 0; i < 5; i++) bonds += `<line x1="${172+i*24}" y1="76" x2="${172+i*24}" y2="142"/>`;
+  for(let j = 0; j < 4; j++) bonds += `<line x1="172" y1="${76+j*22}" x2="268" y2="${76+j*22}"/>`;
+  for(let i = 0; i < 5; i++) for(let j = 0; j < 4; j++){
+    const x = 172 + i*24, y = 76 + j*22;
+    lat += (i + j) % 2
+      ? `<circle cx="${x}" cy="${y}" r="${ra.toFixed(1)}" fill="#8fe6ff"/>`
+      : `<circle cx="${x}" cy="${y}" r="${rb.toFixed(1)}" fill="#0a1517" stroke="#2a78ff"/>`;
+  }
+  const um = (0.25 + gs*0.9).toFixed(2), SERIF = "'Instrument Serif', Georgia, serif";
+  return `<svg viewBox="0 0 300 372" aria-hidden="true" font-family="ui-monospace, Menlo, monospace">
+  <rect x="10" y="8" width="280" height="20" fill="rgba(255,77,54,.1)" stroke="#ff4d36"/>
+  <text x="18" y="22" fill="#ff4d36" font-size="9" letter-spacing="2">EMULSION ANALYSIS</text>
+  <text x="282" y="22" fill="#ff4d36" font-size="8" letter-spacing="1.5" text-anchor="end">C${pad(ci+1)} · ISO ${f.iso}<animate attributeName="opacity" values="1;.25;1" dur="1.4s" repeatCount="indefinite"/></text>
+  <g fill="none" stroke="#2a78ff" stroke-width=".8">
+    <rect x="10" y="38" width="135" height="148"/><rect x="155" y="38" width="135" height="148"/><rect x="10" y="196" width="280" height="136"/>
+  </g>
+  <g font-size="7.5" fill="rgba(143,230,255,.75)" letter-spacing="1">
+    <text x="18" y="51">DEVELOPER · CD-4</text>
+    <text x="163" y="51">SILVER HALIDE · AgBr</text>
+    <text x="18" y="179">C₁₂H₂₀N₂O · e⁻ DONOR</text>
+    <text x="163" y="179">CRYSTAL ⌀ ${um} µm</text>
+    <text x="18" y="209">D-LOG H · ${L(f).toUpperCase()}</text>
+    <text x="${X1}" y="328" text-anchor="end">LOG H</text>
+    <text x="20" y="${Y1+4}">D</text>
+  </g>
+  <g stroke="#6be04f" fill="none" stroke-width="1.1">
+    <polygon points="77,89 99.5,102 99.5,128 77,141 54.5,128 54.5,102"/>
+    <circle cx="77" cy="115" r="14"/>
+    <path d="M77 89V77 M99.5 102L112 95 M77 141V152"/>
+    <circle cx="77" cy="115" r="38" stroke-dasharray="2 4" opacity=".4"/>
+  </g>
+  <g fill="#6be04f" font-size="10" font-family="${SERIF}">
+    <text x="77" y="73" text-anchor="middle">NH₂</text>
+    <text x="114" y="95">CH₃</text>
+    <text x="77" y="163" text-anchor="middle">N(C₂H₅)C₂H₄OH</text>
+  </g>
+  <circle r="2.2" fill="#8fe6ff"><animateMotion dur="4s" repeatCount="indefinite" path="M115,115 A38,38 0 1,1 39,115 A38,38 0 1,1 115,115"/></circle>
+  <g stroke="rgba(42,120,255,.35)" stroke-width=".6">${bonds}</g>
+  ${lat}
+  <g stroke="#ff4d36" fill="none" stroke-width="1">
+    <path d="M278 42 q-3 3 0 6 t0 6 t0 6 t0 6"/>
+    <animate attributeName="opacity" values="1;.2;1" dur="1.1s" repeatCount="indefinite"/>
+  </g>
+  <text x="272" y="58" text-anchor="end" fill="#ff4d36" font-size="11" font-style="italic" font-family="${SERIF}">hν</text>
+  <g stroke="rgba(42,120,255,.3)" stroke-width=".6" stroke-dasharray="1 3">${grid}</g>
+  <path d="M${X0} ${Y1} V${Y0} H${X1}" stroke="#2a78ff" fill="none"/>
+  ${curves}
+  <line x1="${X0}" x2="${X0}" y1="${Y1}" y2="${Y0}" stroke="#ff4d36" stroke-width=".8" opacity=".8">
+    <animate attributeName="x1" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
+    <animate attributeName="x2" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
+  </line>
+  <text x="150" y="353" text-anchor="middle" fill="#8fe6ff" font-size="17" font-style="italic" font-family="${SERIF}">2AgBr + hν → 2Ag⁰ + Br₂</text>
+  <text x="150" y="368" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="7.5" letter-spacing="1.5">PROCESS ${f.proc}</text>
+</svg>`;
+}
+const syncLab = () => { if(!ready) $('empty').innerHTML = labSVG(cur) + '<p>Tap to load a negative</p>'; };
+
 function loadImage(file){
   const url = URL.createObjectURL(file), im = new Image();
   im.onload = () => {
@@ -899,7 +971,8 @@ function loadImage(file){
     gl.activeTexture(gl.TEXTURE0);
     srcC = c; iw = w; ih = h; ready = true; seed = Math.floor(Math.random()*1e6);
     URL.revokeObjectURL(url);
-    $('empty').style.display = 'none'; out.style.display = 'block'; $('save').disabled = false;
+    $('empty').style.display = 'none'; $('empty').innerHTML = '';
+    out.style.display = 'block'; $('save').disabled = false;
     setState(); render();
   };
   im.src = url;
@@ -920,6 +993,12 @@ function save(){
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click();
   }, 'image/jpeg', .95);
 }
+
+// ---------- Pestañas ----------
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p_' + b.dataset.t));
+});
 
 // ---------- Parámetros ----------
 function syncParams(){
@@ -981,9 +1060,10 @@ function pick(i, quiet){
   $('itier').textContent = `${TIER[cur.t]} ${TSHORT[cur.t]}`;
   $('iiso').textContent = 'ISO ' + cur.iso;
   $('itype').textContent = cur.type;
+  $('iproc').textContent = cur.proc.split(' ·')[0];
   $('idesc').textContent = cur.d;
   $('iuses').textContent = cur.uses;
-  syncParams(); req();
+  syncParams(); syncLab(); req();
   if(!quiet) flash();
 }
 const step = d => pick(ci + d);
@@ -1000,7 +1080,7 @@ document.addEventListener('keydown', e => {
 
 // ---------- Gestos sobre la foto ----------
 // Deslizar: cambia de película (cada 48 px, se puede ir y volver sin soltar).
-// Mantener quieto: muestra el original.
+// Mantener quieto: muestra el original. Tocar sin foto: abre el importador.
 const stage = $('stage'), SWIPE = 48;
 let down = false, px = 0, py = 0, moved = false, holdT = 0;
 const hold = v => { if(!ready || holding === v) return; holding = v; setState(); render(); };
@@ -1022,6 +1102,7 @@ stage.addEventListener('pointermove', e => {
 });
 const release = () => { down = false; clearTimeout(holdT); hold(false); };
 ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stage.addEventListener(t, release));
+stage.addEventListener('click', () => { if(!ready && !moved) $('file').click(); });
 stage.addEventListener('contextmenu', e => e.preventDefault());
 
 $('file').addEventListener('change', e => { if(e.target.files[0]) loadImage(e.target.files[0]); e.target.value = ''; });
