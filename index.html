@@ -544,6 +544,34 @@ const PATCH10 = {
 };
 FILMS.forEach(f => Object.assign(f, { vig:.15, leak:0, proc:C41 }, PATCH10[f.n] || {}));
 
+// Parche 11: prueba en pantalla con dos fotos (interior y cielo) frente al original.
+// Los tintes y giros convertidos quedaban débiles en fotos de iPhone; se refuerzan solo las películas que no se distinguían.
+const PATCH11 = {
+ // Gold: la más dorada de las Kodak. Mismos sentidos que la medida, giros ×1,5 y tintes cálidos.
+ 'Gold 200': { curve:[[0,.02],[.15,.15],[.4,.39],[.75,.79],[1,1]], sat:1.1,
+   midTint:[.02,.01,-.028], hiTint:[.022,.01,-.022],
+   bands:{R:[6,-.19,.09],O:[-1,.08,.08],Y:[-6,.06,.11],G:[-11,0,.04],A:[0,-.02,-.03],B:[-5,.01,-.01],P:[0,-.23,.11],M:[3,-.17,.18]} },
+ // Portra 800: cálida y viva, pero por debajo de Gold en calidez.
+ 'Portra 800': { gain:[1.015,1,.975] },
+ // Ultramax: la más saturada de las Kodak; azules por encima del original (con cielo salía más apagada).
+ 'Ultramax 400': { curve:[[0,.03],[.26,.24],[.5,.5],[.8,.83],[1,1]], sat:1.16,
+   bands:{R:[0,-.04,0],O:[6,0,0],Y:[8,-.05,.01],G:[0,.04,.02],A:[0,.06,-.04],B:[-5,.12,-.05],P:[-8,0,.04],M:[0,-.08,-.02]} },
+ // Ektar: viva y contrastada, cielo azul profundo hacia cian, rojos a naranja, violetas pastel.
+ 'Ektar 100': { curve:[[0,0],[.15,.12],[.5,.55],[.75,.82],[1,1]], sat:1.22, midTint:[.008,.002,-.01],
+   bands:{R:[3,.14,0],O:[3,.10,0],Y:[0,-.04,0],G:[-5,0,.04],A:[3,.06,-.02],B:[-3,.16,-.10],P:[-5,-.10,.06],M:[3,-.10,-.01]} },
+ // Superia: neutros con un toque verde-cian más visible.
+ 'Superia 400': { midTint:[-.006,.007,.003] },
+ // Pro 400H: cielos y azules hacia turquesa.
+ 'Pro 400H': { midTint:[-.006,.008,.004],
+   bands:{R:[2,.02,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[18,.04,-.12],A:[6,.14,0],B:[-12,.12,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
+ // 400D: vuelve a ser cálida (el medio verdoso de la 50D la enfriaba).
+ 'CineStill 400D': { midTint:[.014,.006,-.014], sat:1.08 },
+ // Fomapan: ni el PDF ni la prueba muestran cielos oscuros; se corrige el texto. Los rojos claros sí se confirman.
+ 'Fomapan 200': { d:'B/N muy granulada y suave, con rojos y pieles claros y luces amplias.',
+   uses:'Calle con sol y textura; pieles claras, ambiente áspero y grano visible.' },
+};
+FILMS.forEach(f => Object.assign(f, PATCH11[f.n] || {}));
+
 // Selección final y orden de canales. Las películas que no están aquí siguen definidas arriba.
 const KEEP = ['Gold 200','Ultramax 400','Portra 160','Portra 800','Ektar 100','Velvia 100',
   'Superia 400','Fujifilm C200','Pro 400H','CineStill 400D','CineStill 800T','Lomography 800',
@@ -661,7 +689,8 @@ void main(){
       acc += toLin(textureLod(htex, uv + off, lod).rgb);
     }
     float hl = luma(acc/12.);
-    lin += vec3(hl) * halCol * halAmt * 4.;
+    float self = luma(toLin(textureLod(htex, uv, 1.).rgb));   // brillo del propio punto
+    lin += vec3(max(hl - self, 0.)) * halCol * halAmt * 4.;    // el halo solo aparece alrededor de las luces
   }
 
   vec3 c = toGam(lin);
@@ -867,7 +896,8 @@ function toneCurves(f){
 }
 
 function labSVG(f){
-  const ch = toneCurves(f), X0 = 34, X1 = 282, Y0 = 318, Y1 = 218;
+  const ch = toneCurves(f), X0 = 34, X1 = 282, Y0 = 336, Y1 = 272;
+  const SERIF = "'Instrument Serif', Georgia, serif", SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
   const P = a => a.map((y, i) => `${i ? 'L' : 'M'}${(X0 + (X1-X0)*i/(a.length-1)).toFixed(1)} ${(Y0 - (Y0-Y1)*Math.min(1, Math.max(0, y))).toFixed(1)}`).join(' ');
   const curves = f.bw
     ? `<path d="${P(ch[1])}" stroke="#e9f7ff" stroke-width="1.4" fill="none"/>`
@@ -875,46 +905,73 @@ function labSVG(f){
   let grid = '';
   for(let i = 1; i < 5; i++){ const x = X0 + (X1-X0)*i/5; grid += `<line x1="${x}" y1="${Y1}" x2="${x}" y2="${Y0}"/>`; }
   for(let j = 1; j < 4; j++){ const y = Y0 - (Y0-Y1)*j/4; grid += `<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}"/>`; }
-  const gs = gsz(f), ra = 1.6 + gs*2.2, rb = ra*1.7;
-  let lat = '', bonds = '';
-  for(let i = 0; i < 5; i++) bonds += `<line x1="${172+i*24}" y1="76" x2="${172+i*24}" y2="142"/>`;
-  for(let j = 0; j < 4; j++) bonds += `<line x1="172" y1="${76+j*22}" x2="268" y2="${76+j*22}"/>`;
-  for(let i = 0; i < 5; i++) for(let j = 0; j < 4; j++){
-    const x = 172 + i*24, y = 76 + j*22;
-    lat += (i + j) % 2
-      ? `<circle cx="${x}" cy="${y}" r="${ra.toFixed(1)}" fill="#8fe6ff"/>`
-      : `<circle cx="${x}" cy="${y}" r="${rb.toFixed(1)}" fill="#0a1517" stroke="#2a78ff"/>`;
-  }
-  const um = (0.25 + gs*0.9).toFixed(2), SERIF = "'Instrument Serif', Georgia, serif";
-  return `<svg viewBox="0 0 300 372" aria-hidden="true" font-family="ui-monospace, Menlo, monospace">
+
+  // Bobinas: la de alimentación llena, la receptora casi vacía.
+  const reel = (cx, cy, wound, col) => `<g stroke="${col}" fill="none" stroke-width="1">
+    <circle cx="${cx}" cy="${cy}" r="30"/>
+    <circle cx="${cx}" cy="${cy}" r="${wound}" stroke-dasharray="1.5 2.5" opacity=".55"/>
+    <g><circle cx="${cx}" cy="${cy}" r="7"/>
+      <path d="M${cx} ${cy-7}V${cy-22} M${cx+6.1} ${cy+3.5}L${cx+19} ${cy+11} M${cx-6.1} ${cy+3.5}L${cx-19} ${cy+11}"/>
+      <circle cx="${cx}" cy="${cy-26}" r="1.6" fill="${col}"/>
+      <animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="5s" repeatCount="indefinite"/></g>
+  </g>`;
+  const frame = (ci*5 + 7) % 36 + 1;
+
+  // Diales: grano, halation, viñeteado (mismos niveles que las barras) e ISO en escala logarítmica.
+  const arc = (cx, cy, r, t) => {
+    const a0 = 135*Math.PI/180, a1 = (135 + 270*t)*Math.PI/180;
+    return `M${(cx + r*Math.cos(a0)).toFixed(1)} ${(cy + r*Math.sin(a0)).toFixed(1)} A${r} ${r} 0 ${270*t > 180 ? 1 : 0} 1 ${(cx + r*Math.cos(a1)).toFixed(1)} ${(cy + r*Math.sin(a1)).toFixed(1)}`;
+  };
+  const lv = k => { const s = LV[k](f); return s.ok ? s.p : 0; };
+  const DC = ['#4d8dff', '#6be04f', '#e9f7ff', '#ff4d36'];
+  const dials = [
+    ['GRAIN',    lv('grain'), pad(Math.round(lv('grain')*100))],
+    ['HALATION', lv('hal'),   pad(Math.round(lv('hal')*100))],
+    ['VIGNETTE', lv('vig'),   pad(Math.round(lv('vig')*100))],
+    ['ISO', Math.min(1, Math.max(0, Math.log2(f.iso/50)/5)), String(f.iso)],
+  ].map(([lab, t, num], i) => {
+    const cx = 45 + i*70, cy = 186, r = 15, tt = Math.max(.002, t), a = (135 + 270*tt)*Math.PI/180;
+    return `<path d="${arc(cx, cy, r, 1)}" stroke="rgba(143,230,255,.2)" stroke-width="2" fill="none"/>
+      <path d="${arc(cx, cy, r, tt)}" stroke="${DC[i]}" stroke-width="2" fill="none"/>
+      <line x1="${cx}" y1="${cy}" x2="${(cx + (r-4)*Math.cos(a)).toFixed(1)}" y2="${(cy + (r-4)*Math.sin(a)).toFixed(1)}" stroke="${DC[i]}" stroke-width="1.2"/>
+      <circle cx="${cx}" cy="${cy}" r="1.8" fill="${DC[i]}"/>
+      <text x="${cx}" y="224" text-anchor="middle" fill="${DC[i]}" font-size="20" font-weight="200" font-family="${SANS}">${num}</text>
+      <text x="${cx}" y="236" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="6.5" letter-spacing="1">${lab}</text>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 300 392" aria-hidden="true" font-family="ui-monospace, Menlo, monospace">
   <rect x="10" y="8" width="280" height="20" fill="rgba(255,77,54,.1)" stroke="#ff4d36"/>
   <text x="18" y="22" fill="#ff4d36" font-size="9" letter-spacing="2">EMULSION ANALYSIS</text>
-  <text x="282" y="22" fill="#ff4d36" font-size="8" letter-spacing="1.5" text-anchor="end">C${pad(ci+1)} · ISO ${f.iso}<animate attributeName="opacity" values="1;.25;1" dur="1.4s" repeatCount="indefinite"/></text>
+  <text x="282" y="22" fill="#ff4d36" font-size="8" letter-spacing="1.5" text-anchor="end">C${pad(ci+1)} · ${f.g.toUpperCase()}<animate attributeName="opacity" values="1;.25;1" dur="1.4s" repeatCount="indefinite"/></text>
   <g fill="none" stroke="#2a78ff" stroke-width=".8">
-    <rect x="10" y="38" width="135" height="148"/><rect x="155" y="38" width="135" height="148"/><rect x="10" y="196" width="280" height="136"/>
+    <rect x="10" y="38" width="280" height="112"/><rect x="10" y="158" width="280" height="84"/><rect x="10" y="250" width="280" height="100"/>
   </g>
+
+  <g font-size="6.5" fill="rgba(143,230,255,.6)" letter-spacing="1">
+    <text x="18" y="50">35MM · TRANSPORT</text>
+    <text x="150" y="52" text-anchor="middle">FRAME</text>
+    <text x="70" y="146" text-anchor="middle">SUPPLY</text>
+    <text x="230" y="146" text-anchor="middle">TAKE-UP</text>
+  </g>
+  <text x="282" y="50" text-anchor="end" fill="#ff4d36" font-size="6.5" letter-spacing="1">● EXP<animate attributeName="opacity" values="1;.2;1" dur="1s" repeatCount="indefinite"/></text>
+  ${reel(70, 90, 26, '#e9f7ff')}
+  ${reel(230, 90, 14, '#e9f7ff')}
+  <path d="M70 120 L102 132 H198 L230 120" stroke="#8fe6ff" stroke-width="1" fill="none"/>
+  <path d="M70 120 L102 132 H198 L230 120" stroke="#8fe6ff" stroke-width="3" fill="none" stroke-dasharray="1 3" opacity=".7">
+    <animate attributeName="stroke-dashoffset" values="0;-8" dur=".5s" repeatCount="indefinite"/></path>
+  <circle cx="102" cy="132" r="3" fill="#0a1517" stroke="#4d8dff"/><circle cx="198" cy="132" r="3" fill="#0a1517" stroke="#4d8dff"/>
+  <circle cx="150" cy="108" r="6" fill="none" stroke="#6be04f"/>
+  <path d="M150 114V125" stroke="#6be04f" stroke-dasharray="1.5 2"/>
+  <rect x="141" y="125" width="18" height="14" fill="#0a1517" stroke="#ff4d36"/>
+  <text x="150" y="84" text-anchor="middle" fill="#e9f7ff" font-size="30" font-weight="200" font-family="${SANS}">${pad(frame)}<tspan font-size="11" fill="rgba(143,230,255,.6)">/36</tspan></text>
+
+  ${dials}
+
   <g font-size="7.5" fill="rgba(143,230,255,.75)" letter-spacing="1">
-    <text x="18" y="51">DEVELOPER · CD-4</text>
-    <text x="163" y="51">SILVER HALIDE · AgBr</text>
-    <text x="18" y="179">C₁₂H₂₀N₂O · e⁻ DONOR</text>
-    <text x="163" y="179">CRYSTAL ⌀ ${um} µm</text>
-    <text x="18" y="209">D-LOG H · ${L(f).toUpperCase()}</text>
-    <text x="${X1}" y="328" text-anchor="end">LOG H</text>
+    <text x="18" y="263">D-LOG H · ${L(f).toUpperCase()}</text>
+    <text x="${X1}" y="346" text-anchor="end">LOG H</text>
     <text x="20" y="${Y1+4}">D</text>
   </g>
-  <g stroke="#6be04f" fill="none" stroke-width="1.1">
-    <polygon points="77,89 99.5,102 99.5,128 77,141 54.5,128 54.5,102"/>
-    <circle cx="77" cy="115" r="13"/>
-    <path d="M77 89V77 M99.5 102L112 95 M77 141V152"/>
-  </g>
-  <g fill="#6be04f" font-size="10" font-family="${SERIF}">
-    <text x="77" y="73" text-anchor="middle">NH₂</text>
-    <text x="114" y="95">CH₃</text>
-    <text x="77" y="163" text-anchor="middle">N(C₂H₅)C₂H₄OH</text>
-  </g>
-  <circle r="2" fill="#8fe6ff"><animateMotion dur="3s" repeatCount="indefinite" path="M96,115 A19,19 0 1,1 58,115 A19,19 0 1,1 96,115"/></circle>
-  <g stroke="rgba(42,120,255,.35)" stroke-width=".6">${bonds}</g>
-  ${lat}
   <g stroke="rgba(42,120,255,.3)" stroke-width=".6" stroke-dasharray="1 3">${grid}</g>
   <path d="M${X0} ${Y1} V${Y0} H${X1}" stroke="#2a78ff" fill="none"/>
   ${curves}
@@ -922,8 +979,9 @@ function labSVG(f){
     <animate attributeName="x1" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
     <animate attributeName="x2" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
   </line>
-  <text x="150" y="353" text-anchor="middle" fill="#8fe6ff" font-size="17" font-style="italic" font-family="${SERIF}">2AgBr + hν → 2Ag⁰ + Br₂</text>
-  <text x="150" y="368" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="7.5" letter-spacing="1.5">PROCESS ${f.proc}</text>
+
+  <text x="150" y="372" text-anchor="middle" fill="#8fe6ff" font-size="15" font-style="italic" font-family="${SERIF}">2AgBr + hν → 2Ag⁰ + Br₂</text>
+  <text x="150" y="387" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="7.5" letter-spacing="1.5">PROCESS ${f.proc}</text>
 </svg>`;
 }
 const syncLab = () => {
