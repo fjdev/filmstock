@@ -101,6 +101,8 @@
          font: 9px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cyan-d); transition: opacity .2s; }
   .row b { text-align: right; font: 600 11px var(--mono); letter-spacing: .05em; color: var(--cyan);
            font-variant-numeric: tabular-nums; text-shadow: 0 0 8px rgba(143,230,255,.7); }
+  .roll { cursor: pointer; color: var(--cyan); text-shadow: 0 0 6px rgba(143,230,255,.5); }
+  .roll:active { color: #fff; }
   .bar, .row input[type=range] {
     -webkit-appearance: none; appearance: none; width: 100%; height: 14px; margin: 0; outline: none;
     background:
@@ -125,6 +127,7 @@
   .sw:disabled { border-style: dashed; opacity: 1; }
   .stampv { font: 12px "Courier New", monospace; letter-spacing: .1em; color: #ff8a2a;
             text-shadow: 0 0 6px rgba(255,90,0,.8); text-transform: none; }
+  .stampv.mono { color: #dfe7e9; text-shadow: 0 0 6px rgba(255,255,255,.6); }
   .row.off .stampv { opacity: .3; }
 
   .ihead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -209,7 +212,7 @@
           <div class="row" id="r_vig"><button class="sw" data-k="vig" type="button" aria-label="Vignette"></button>
             <span>Vignette</span><div class="bar"></div><b></b></div>
           <div class="row" id="r_leak"><button class="sw" data-k="leak" type="button" aria-label="Light leak"></button>
-            <span>Leak</span><div class="bar"></div><b></b></div>
+            <span class="roll" id="leakRoll" role="button" aria-label="Sortear otra fuga">Leak ↻</span><div class="bar"></div><b></b></div>
           <div class="row" id="r_date"><button class="sw" data-k="date" type="button" aria-label="Date"></button>
             <span>Date</span><span class="stampv" id="stampv"></span><b></b></div>
         </div>
@@ -545,32 +548,45 @@ const PATCH10 = {
 FILMS.forEach(f => Object.assign(f, { vig:.15, leak:0, proc:C41 }, PATCH10[f.n] || {}));
 
 // Parche 11: prueba en pantalla con dos fotos (interior y cielo) frente al original.
-// Los tintes y giros convertidos quedaban débiles en fotos de iPhone; se refuerzan solo las películas que no se distinguían.
 const PATCH11 = {
- // Gold: la más dorada de las Kodak. Mismos sentidos que la medida, giros ×1,5 y tintes cálidos.
  'Gold 200': { curve:[[0,.02],[.15,.15],[.4,.39],[.75,.79],[1,1]], sat:1.1,
    midTint:[.02,.01,-.028], hiTint:[.022,.01,-.022],
    bands:{R:[6,-.19,.09],O:[-1,.08,.08],Y:[-6,.06,.11],G:[-11,0,.04],A:[0,-.02,-.03],B:[-5,.01,-.01],P:[0,-.23,.11],M:[3,-.17,.18]} },
- // Portra 800: cálida y viva, pero por debajo de Gold en calidez.
  'Portra 800': { gain:[1.015,1,.975] },
- // Ultramax: la más saturada de las Kodak; azules por encima del original (con cielo salía más apagada).
  'Ultramax 400': { curve:[[0,.03],[.26,.24],[.5,.5],[.8,.83],[1,1]], sat:1.16,
    bands:{R:[0,-.04,0],O:[6,0,0],Y:[8,-.05,.01],G:[0,.04,.02],A:[0,.06,-.04],B:[-5,.12,-.05],P:[-8,0,.04],M:[0,-.08,-.02]} },
- // Ektar: viva y contrastada, cielo azul profundo hacia cian, rojos a naranja, violetas pastel.
  'Ektar 100': { curve:[[0,0],[.15,.12],[.5,.55],[.75,.82],[1,1]], sat:1.22, midTint:[.008,.002,-.01],
    bands:{R:[3,.14,0],O:[3,.10,0],Y:[0,-.04,0],G:[-5,0,.04],A:[3,.06,-.02],B:[-3,.16,-.10],P:[-5,-.10,.06],M:[3,-.10,-.01]} },
- // Superia: neutros con un toque verde-cian más visible.
  'Superia 400': { midTint:[-.006,.007,.003] },
- // Pro 400H: cielos y azules hacia turquesa.
  'Pro 400H': { midTint:[-.006,.008,.004],
    bands:{R:[2,.02,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[18,.04,-.12],A:[6,.14,0],B:[-12,.12,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
- // 400D: vuelve a ser cálida (el medio verdoso de la 50D la enfriaba).
  'CineStill 400D': { midTint:[.014,.006,-.014], sat:1.08 },
- // Fomapan: ni el PDF ni la prueba muestran cielos oscuros; se corrige el texto. Los rojos claros sí se confirman.
  'Fomapan 200': { d:'B/N muy granulada y suave, con rojos y pieles claros y luces amplias.',
    uses:'Calle con sol y textura; pieles claras, ambiente áspero y grano visible.' },
 };
 FILMS.forEach(f => Object.assign(f, PATCH11[f.n] || {}));
+
+// Parche 12: segunda prueba en pantalla (planta y atardecer) tras el PATCH11.
+const PATCH12 = {
+ 'Portra 800': { sat:1.03 },
+ 'Gold 200': { bands:{R:[6,-.12,.06],O:[-1,.08,.08],Y:[-6,.06,.11],G:[-11,0,.04],A:[0,-.02,-.03],B:[-5,.01,-.01],P:[0,-.23,.11],M:[3,-.17,.18]} },
+ 'Superia 400': { sat:1.05 },
+};
+FILMS.forEach(f => Object.assign(f, PATCH12[f.n] || {}));
+
+// Parche 13: Portra 160 pastel cálida; fuga de luz como efecto de cámara (todas), con color según la película.
+const PATCH13 = {
+ 'Portra 160': { curve:[[0,.035],[.25,.28],[.5,.54],[.8,.84],[1,.975]], sat:.95, hiTint:[.008,.004,-.002],
+   d:'Pastel cálida y fiel: sombras suaves, medios luminosos, blancos cremosos y grano muy fino.' },
+};
+FILMS.forEach(f => Object.assign(f, PATCH13[f.n] || {}));
+// La fuga es de la cámara: disponible en todas (50; desechable 70). Color según la película:
+// negativo color naranja-rojizo, diapositiva amarillo pálido, B/N velo blanco. El núcleo es más claro en todas.
+FILMS.forEach(f => {
+  if(!f.leak) f.leak = .5;
+  f.leakCol = f.bw ? [.92,.92,.92] : f.type === 'Diapositiva' ? [1,.86,.6] : [1,.45,.18];
+  f.leakHot = f.bw ? [1,1,1] : [1,.93,.72];
+});
 
 // Selección final y orden de canales. Las películas que no están aquí siguen definidas arriba.
 const KEEP = ['Gold 200','Ultramax 400','Portra 160','Portra 800','Ektar 100','Velvia 100',
@@ -629,10 +645,12 @@ in vec2 uv; out vec4 o;
 uniform sampler2D tex; uniform vec2 res; uniform float seed;
 uniform sampler2D htex;
 uniform sampler2D lut; uniform float useLut;
-uniform vec3 wb, lift, gain, shTint, hiTint, midTint, mono, halCol;
+uniform vec3 wb, lift, gain, shTint, hiTint, midTint, mono, halCol, leakCol, leakHot;
 uniform float bw, contrast, sCurve, sat, soft;
 uniform vec3 bands[8];
 uniform float grainAmt, grainSize, grainChroma, grainRough, halAmt, halRad, strength, vignette, leak;
+uniform vec4 lkA, lkB;          // fuga: (borde 0=izq 1=der 2=arriba 3=abajo, posición en el borde, anchura, alcance)
+uniform float lkAk, lkBk;       // intensidad de cada mancha (0 = no hay)
 
 const float CEN[8] = float[8](0.,30.,60.,120.,180.,240.,275.,315.);
 const float WID[8] = float[8](45.,30.,60.,60.,60.,60.,40.,45.);
@@ -671,6 +689,20 @@ float gnoise(vec2 p, uint s){
   float a = vnoise(p, s), b = vnoise(p*2.1 + 7.3, s + 13u);
   float k = 0.4*grainRough;
   return (a*(1.-k) + b*k - .5) * 2.6;
+}
+
+// Una mancha de fuga: lengua de luz que entra desde un borde, más profunda en su centro y con contorno irregular.
+float leakBlob(vec4 p, vec2 q){
+  float d, a;
+  if(p.x < .5){ d = q.x; a = q.y; }
+  else if(p.x < 1.5){ d = 1. - q.x; a = q.y; }
+  else if(p.x < 2.5){ d = 1. - q.y; a = q.x; }
+  else { d = q.y; a = q.x; }
+  float along = exp(-pow((a - p.y)/p.z, 2.));
+  float reach = p.w * (.45 + .55*along);
+  d += .025*sin(a*14. + p.y*31.) + .015*sin(a*37. + p.z*17.);
+  float depth = 1. - smoothstep(0., reach, d);
+  return along * pow(depth, 1.6);
 }
 
 void main(){
@@ -737,10 +769,13 @@ void main(){
   vec2 q = uv - .5; q.x *= res.x/res.y;
   c *= 1. - vignette*smoothstep(.3, .9, length(q));
 
-  float side = step(.5, fract(seed*.37));
-  float x = mix(uv.x, 1. - uv.x, side);
-  float lk = pow(smoothstep(.35, 0., x), 2.) * (.7 + .3*sin(uv.y*4. + seed));
-  c += vec3(1., .45, .18) * lk * leak * .5;
+  // Fuga de luz: una o dos manchas desde los bordes, núcleo claro que se degrada al color de la película.
+  if(leak > .001){
+    float lt = clamp(leakBlob(lkA, uv)*lkAk + leakBlob(lkB, uv)*lkBk, 0., 1.4);
+    vec3 lc = mix(leakCol, leakHot, smoothstep(.45, 1.1, lt));
+    vec3 add = clamp(lc * lt * leak * .85, 0., 1.);
+    c = 1. - (1. - clamp(c, 0., 1.)) * (1. - add);   // mezcla en modo trama
+  }
 
   o = vec4(clamp(c, 0., 1.), 1.);
 }`;
@@ -769,8 +804,9 @@ const loc = gl.getAttribLocation(prog, 'p'); gl.enableVertexAttribArray(loc);
 gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
-['htex','lut','useLut','midTint','tex','res','seed','wb','lift','gain','shTint','hiTint','mono','halCol','bw','contrast','sCurve','sat','soft','bands',
- 'grainAmt','grainSize','grainChroma','grainRough','halAmt','halRad','strength','vignette','leak']
+['htex','lut','useLut','midTint','tex','res','seed','wb','lift','gain','shTint','hiTint','mono','halCol','leakCol','leakHot',
+ 'bw','contrast','sCurve','sat','soft','bands','grainAmt','grainSize','grainChroma','grainRough','halAmt','halRad',
+ 'strength','vignette','leak','lkA','lkB','lkAk','lkBk']
  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
 const tex = gl.createTexture();
 const htex = gl.createTexture();
@@ -807,7 +843,7 @@ function buildHalo(src){
 
 // ---------- Estado ----------
 let cur = FILMS[0], ci = 0, seed = Math.floor(Math.random()*1e6);
-let iw = 0, ih = 0, ready = false, holding = false, srcC = null;
+let iw = 0, ih = 0, ready = false, holding = false, srcC = null, photoDate = null;
 const pad = n => String(n).padStart(2, '0');
 const L = f => f.label || f.n;
 const v3 = x => Array.isArray(x) ? x : [x, x, x];
@@ -820,11 +856,25 @@ const ON = { grain:true, hal:true, vig:true, leak:false, date:false };
 const gsz = f => f.grain[0]*f.grain[1];
 const LV = {
   grain: f => ({ ok:true,           p: Math.min(1, gsz(f)/1.3) }),
-  hal:   f => ({ ok:f.hal[0] >= .1, p: Math.min(1, f.hal[0]) }),
+  hal:   f => ({ ok:f.hal[0] >= .1, p: Math.min(1, f.hal[0]) }),   // solo películas sin capa antihalo (CineStill)
   vig:   f => ({ ok:f.vig > 0,      p: Math.min(1, f.vig/.4) }),
-  leak:  f => ({ ok:f.leak > 0,     p: Math.min(1, f.leak) }),
+  leak:  f => ({ ok:f.leak > 0,     p: Math.min(1, f.leak) }),     // efecto de cámara: disponible en todas
 };
 const on = k => ON[k] && LV[k](cur).ok;
+
+// ---------- Fuga de luz: sorteo propio (independiente del grano) ----------
+// Borde: izquierda o derecha el 84 %, arriba 8 %, abajo 8 % (lados cortos del fotograma en 35 mm).
+// Cada mancha: posición en el borde, anchura y alcance al azar. Segunda mancha el 40 % de las veces, más débil.
+let LK = null;
+function rollLeak(){
+  const r = Math.random;
+  const edge = () => { const u = r(); return u < .42 ? 0 : u < .84 ? 1 : u < .92 ? 2 : 3; };
+  const blob = e => [e, .15 + r()*.7, .12 + r()*.25, .18 + r()*.30];
+  const e1 = edge();
+  const e2 = r() < .75 ? e1 : [1, 0, 3, 2][e1];
+  LK = { A: blob(e1), B: blob(e2), ka: .7 + r()*.3, kb: r() < .4 ? .35 + r()*.35 : 0 };
+}
+rollLeak();
 
 function draw(w, h){
   glc.width = w; glc.height = h; gl.viewport(0, 0, w, h);
@@ -835,6 +885,9 @@ function draw(w, h){
   gl.uniform3fv(U.wb, p.wb); gl.uniform3fv(U.lift, v3(p.lift)); gl.uniform3fv(U.gain, p.gain);
   gl.uniform3fv(U.shTint, p.shTint); gl.uniform3fv(U.hiTint, p.hiTint); gl.uniform3fv(U.mono, p.mono);
   gl.uniform3fv(U.halCol, p.hal[2]);
+  gl.uniform3fv(U.leakCol, p.leakCol); gl.uniform3fv(U.leakHot, p.leakHot);
+  gl.uniform4fv(U.lkA, LK.A); gl.uniform4fv(U.lkB, LK.B);
+  gl.uniform1f(U.lkAk, LK.ka); gl.uniform1f(U.lkBk, LK.kb);
   gl.uniform1f(U.bw, p.bw); gl.uniform1f(U.contrast, p.contrast); gl.uniform1f(U.sCurve, p.curveS);
   gl.uniform1f(U.sat, p.sat); gl.uniform1f(U.soft, p.soft);
   gl.uniform3fv(U.bands, bandsArr(p.bands));
@@ -848,14 +901,46 @@ function draw(w, h){
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
+// ---------- Fecha (respaldo fechador de cámara compacta) ----------
+// Lee la fecha en que se hizo la foto (EXIF DateTimeOriginal) de un JPEG. Si no hay, se usa la de hoy.
+async function exifDate(file){
+  try {
+    const v = new DataView(await file.slice(0, 256*1024).arrayBuffer());
+    if(v.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while(o < v.byteLength - 10){
+      const mk2 = v.getUint16(o), len = v.getUint16(o + 2);
+      if(mk2 === 0xFFE1 && v.getUint32(o + 4) === 0x45786966){
+        const t = o + 10, le = v.getUint16(t) === 0x4949;
+        const g16 = p => v.getUint16(p, le), g32 = p => v.getUint32(p, le);
+        const find = (p, tag) => { const n = g16(p); for(let i = 0; i < n; i++){ const e = p + 2 + i*12; if(g16(e) === tag) return e; } return 0; };
+        const ifd0 = t + g32(t + 4);
+        let e = 0;
+        const ex = find(ifd0, 0x8769);
+        if(ex) e = find(t + g32(ex + 8), 0x9003);
+        if(!e) e = find(ifd0, 0x0132);
+        if(!e) return null;
+        const off = t + g32(e + 8); let str = '';
+        for(let i = 0; i < 19; i++) str += String.fromCharCode(v.getUint8(off + i));
+        const mt = str.match(/(\d{4}):(\d{2}):(\d{2})/);
+        return mt ? new Date(+mt[1], +mt[2] - 1, +mt[3]) : null;
+      }
+      if((mk2 & 0xFF00) !== 0xFF00) break;
+      o += 2 + len;
+    }
+  } catch(_){}
+  return null;
+}
 function dateText(){
-  const d = new Date(), p2 = n => String(n).padStart(2, '0');
+  const d = photoDate || new Date(), p2 = n => String(n).padStart(2, '0');
   return `'${String(d.getFullYear()).slice(2)}  ${p2(d.getMonth()+1)}  ${p2(d.getDate())}`;
 }
+// En color el LED sale naranja; en B/N solo puede dar plata, así que sale blanco.
 function stamp(x, w, h){
-  const fs = Math.round(Math.max(w, h) * .026);
+  const fs = Math.round(Math.max(w, h) * .026), mono = !!cur.bw;
   x.font = `${fs}px "Courier New", monospace`; x.textAlign = 'right'; x.textBaseline = 'bottom';
-  x.shadowColor = 'rgba(255,90,0,.9)'; x.shadowBlur = fs*.35; x.fillStyle = '#ff8a2a';
+  x.shadowColor = mono ? 'rgba(255,255,255,.75)' : 'rgba(255,90,0,.9)'; x.shadowBlur = fs*.35;
+  x.fillStyle = mono ? '#ececec' : '#ff8a2a';
   x.fillText(dateText(), w - fs*1.2, h - fs); x.shadowBlur = 0;
 }
 
@@ -876,7 +961,7 @@ function setState(){
   s.classList.toggle('ok', ready && !holding);
 }
 
-// ---------- Laboratorio (pantalla sin foto) ----------
+// ---------- Recreativa (pantalla sin foto) ----------
 // Curva característica de la película: sus curvas y tintes reales, con las diferencias entre canales exageradas ×4.
 function toneCurves(f){
   const N = 40, ch = [[], [], []], lf = v3(f.lift);
@@ -895,93 +980,127 @@ function toneCurves(f){
   return ch;
 }
 
+// Sprites originales de 8×8 en dos fotogramas: bote de película, cristal de haluro y bicho-cámara.
+const SPR = {
+  can:  [["..####..",".#....#.","########","#.#..#.#","########","#.####.#","#.#..#.#","..#..#.."],
+         ["..####..",".#....#.","########","#.#..#.#","########","#.####.#",".##..##.","#......#"]],
+  xtal: [["#......#",".#.##.#.","..####..",".##..##.","########",".######.","..#..#..",".#....#."],
+         [".#....#.","..####..",".#.##.#.",".##..##.","########",".######.",".#....#.","#......#"]],
+  bug:  [[".##.....","########","#..##..#","#.#..#.#","#.#..#.#","#..##..#","########",".#....#."],
+         [".....##.","########","#..##..#","#.#..#.#","#.#..#.#","#..##..#","########","#......#"]],
+};
+const SHIP = ["...##....",".#######.","##..#..##","#..###..#","#..###..#","##..#..##",".#######.","#.......#"];
+const pix = (rows, p) => rows.map((r, j) => [...r].map((ch, i) => ch === '#'
+  ? `<rect x="${i*p}" y="${j*p}" width="${p}" height="${p}"/>` : '').join('')).join('');
+
 function labSVG(f){
-  const ch = toneCurves(f), X0 = 34, X1 = 282, Y0 = 336, Y1 = 272;
-  const SERIF = "'Instrument Serif', Georgia, serif", SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-  const P = a => a.map((y, i) => `${i ? 'L' : 'M'}${(X0 + (X1-X0)*i/(a.length-1)).toFixed(1)} ${(Y0 - (Y0-Y1)*Math.min(1, Math.max(0, y))).toFixed(1)}`).join(' ');
-  const curves = f.bw
-    ? `<path d="${P(ch[1])}" stroke="#e9f7ff" stroke-width="1.4" fill="none"/>`
-    : ['#ff4d36','#6be04f','#8fe6ff'].map((c, i) => `<path d="${P(ch[i])}" stroke="${c}" stroke-width="1.2" fill="none" opacity=".9"/>`).join('');
-  let grid = '';
-  for(let i = 1; i < 5; i++){ const x = X0 + (X1-X0)*i/5; grid += `<line x1="${x}" y1="${Y1}" x2="${x}" y2="${Y0}"/>`; }
-  for(let j = 1; j < 4; j++){ const y = Y0 - (Y0-Y1)*j/4; grid += `<line x1="${X0}" y1="${y}" x2="${X1}" y2="${y}"/>`; }
-
-  // Bobinas: la de alimentación llena, la receptora casi vacía.
-  const reel = (cx, cy, wound, col) => `<g stroke="${col}" fill="none" stroke-width="1">
-    <circle cx="${cx}" cy="${cy}" r="30"/>
-    <circle cx="${cx}" cy="${cy}" r="${wound}" stroke-dasharray="1.5 2.5" opacity=".55"/>
-    <g><circle cx="${cx}" cy="${cy}" r="7"/>
-      <path d="M${cx} ${cy-7}V${cy-22} M${cx+6.1} ${cy+3.5}L${cx+19} ${cy+11} M${cx-6.1} ${cy+3.5}L${cx-19} ${cy+11}"/>
-      <circle cx="${cx}" cy="${cy-26}" r="1.6" fill="${col}"/>
-      <animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="5s" repeatCount="indefinite"/></g>
-  </g>`;
-  const frame = (ci*5 + 7) % 36 + 1;
-
-  // Diales: grano, halation, viñeteado (mismos niveles que las barras) e ISO en escala logarítmica.
-  const arc = (cx, cy, r, t) => {
-    const a0 = 135*Math.PI/180, a1 = (135 + 270*t)*Math.PI/180;
-    return `M${(cx + r*Math.cos(a0)).toFixed(1)} ${(cy + r*Math.sin(a0)).toFixed(1)} A${r} ${r} 0 ${270*t > 180 ? 1 : 0} 1 ${(cx + r*Math.cos(a1)).toFixed(1)} ${(cy + r*Math.sin(a1)).toFixed(1)}`;
-  };
+  const bw = !!f.bw, ch = toneCurves(f), n = pad(ci+1);
   const lv = k => { const s = LV[k](f); return s.ok ? s.p : 0; };
-  const DC = ['#4d8dff', '#6be04f', '#e9f7ff', '#ff4d36'];
-  const dials = [
-    ['GRAIN',    lv('grain'), pad(Math.round(lv('grain')*100))],
-    ['HALATION', lv('hal'),   pad(Math.round(lv('hal')*100))],
-    ['VIGNETTE', lv('vig'),   pad(Math.round(lv('vig')*100))],
-    ['ISO', Math.min(1, Math.max(0, Math.log2(f.iso/50)/5)), String(f.iso)],
-  ].map(([lab, t, num], i) => {
-    const cx = 45 + i*70, cy = 186, r = 15, tt = Math.max(.002, t), a = (135 + 270*tt)*Math.PI/180;
-    return `<path d="${arc(cx, cy, r, 1)}" stroke="rgba(143,230,255,.2)" stroke-width="2" fill="none"/>
-      <path d="${arc(cx, cy, r, tt)}" stroke="${DC[i]}" stroke-width="2" fill="none"/>
-      <line x1="${cx}" y1="${cy}" x2="${(cx + (r-4)*Math.cos(a)).toFixed(1)}" y2="${(cy + (r-4)*Math.sin(a)).toFixed(1)}" stroke="${DC[i]}" stroke-width="1.2"/>
-      <circle cx="${cx}" cy="${cy}" r="1.8" fill="${DC[i]}"/>
-      <text x="${cx}" y="224" text-anchor="middle" fill="${DC[i]}" font-size="20" font-weight="200" font-family="${SANS}">${num}</text>
-      <text x="${cx}" y="236" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="6.5" letter-spacing="1">${lab}</text>`;
-  }).join('');
+  const COL = bw ? ['#e9f7ff', '#b7c6ca', '#8e9ea2'] : ['#ff4d36', '#6be04f', '#8fe6ff'];
+
+  // Cielo estrellado: cada película tiene el suyo (semilla fija) y más estrellas cuanto más grano.
+  let sd = (ci + 1) * 7919;
+  const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  let stars = '';
+  const nStars = 24 + Math.round(lv('grain')*70);
+  for(let i = 0; i < nStars; i++){
+    const x = (10 + rnd()*280).toFixed(1), y = (34 + rnd()*200).toFixed(1), r = (.4 + rnd()*.7).toFixed(2);
+    const tw = rnd() < .35
+      ? `<animate attributeName="opacity" values="1;.15;1" dur="${(1 + rnd()*2).toFixed(1)}s" begin="-${(rnd()*2).toFixed(1)}s" repeatCount="indefinite"/>` : '';
+    stars += `<circle cx="${x}" cy="${y}" r="${r}">${tw}</circle>`;
+  }
+
+  // Invasores: marchan más rápido cuanto más ISO.
+  const types = ['can', 'xtal', 'bug'];
+  let defs = '';
+  types.forEach(t => [0, 1].forEach(k => defs += `<g id="sp_${t}${k}">${pix(SPR[t][k], 2)}</g>`));
+  defs += `<g id="sp_ship">${pix(SHIP, 2)}</g>`;
+  const wave = k => types.map((t, r) => `<g fill="${COL[r]}">` +
+    [0,1,2,3,4,5].map(c => `<use href="#sp_${t}${k}" x="${54 + c*34}" y="${44 + r*24}"/>`).join('') + `</g>`).join('');
+  const speed = Math.max(1.6, 6.4 - 1.2*Math.log2(f.iso/100)).toFixed(1);
+
+  // Halation: resplandor en el sol y en la nave.
+  const hal = lv('hal');
+  const glow = hal > 0 ? 'filter="url(#glow)"' : '';
+
+  // Terreno: la curva D-LOG convertida en montaña.
+  const X0 = 10, X1 = 290, Y0 = 300, Y1 = 226;
+  const cl = y => Math.min(1, Math.max(0, y));
+  const pts = a => a.map((y, i) => `${(X0 + (X1-X0)*i/(a.length-1)).toFixed(1)} ${(Y0 - (Y0-Y1)*cl(y)).toFixed(1)}`);
+  const mean = ch[0].map((_, i) => (ch[0][i] + ch[1][i] + ch[2][i])/3);
+  const ridge = `M${X0} ${Y0} L${pts(mean).join(' L')} L${X1} ${Y0} Z`;
+  const curves = bw
+    ? `<path d="M${pts(ch[1]).join(' L')}" stroke="#e9f7ff" stroke-width="1.4" fill="none"/>`
+    : ['#ff4d36','#6be04f','#8fe6ff'].map((c, i) => `<path d="M${pts(ch[i]).join(' L')}" stroke="${c}" stroke-width="1.2" fill="none" opacity=".9"/>`).join('');
+
+  // Suelo de rejilla que avanza.
+  let floor = '';
+  for(let i = 0; i <= 10; i++){ const dx = i - 5; floor += `<line x1="${150 + dx*12}" y1="300" x2="${150 + dx*64}" y2="360"/>`; }
+  for(let k = 0; k < 6; k++){
+    const a = `values="300;360" keyTimes="0;1" keySplines=".6 0 1 1" calcMode="spline" dur="2.4s" begin="-${(k*.4).toFixed(1)}s" repeatCount="indefinite"`;
+    floor += `<line x1="10" x2="290" y1="300" y2="300"><animate attributeName="y1" ${a}/><animate attributeName="y2" ${a}/></line>`;
+  }
 
   return `<svg viewBox="0 0 300 392" aria-hidden="true" font-family="ui-monospace, Menlo, monospace">
-  <rect x="10" y="8" width="280" height="20" fill="rgba(255,77,54,.1)" stroke="#ff4d36"/>
-  <text x="18" y="22" fill="#ff4d36" font-size="9" letter-spacing="2">EMULSION ANALYSIS</text>
-  <text x="282" y="22" fill="#ff4d36" font-size="8" letter-spacing="1.5" text-anchor="end">C${pad(ci+1)} · ${f.g.toUpperCase()}<animate attributeName="opacity" values="1;.25;1" dur="1.4s" repeatCount="indefinite"/></text>
-  <g fill="none" stroke="#2a78ff" stroke-width=".8">
-    <rect x="10" y="38" width="280" height="112"/><rect x="10" y="158" width="280" height="84"/><rect x="10" y="250" width="280" height="100"/>
+  <defs>
+    ${defs}
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="${(1.5 + hal*3).toFixed(1)}" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${bw ? '#f2f7f8' : '#ffd24a'}"/><stop offset="1" stop-color="${bw ? '#6f7f83' : '#ff4d36'}"/>
+    </linearGradient>
+    <linearGradient id="ter" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d2a33"/><stop offset="1" stop-color="#0a1517"/>
+    </linearGradient>
+    <radialGradient id="vg" cx="50%" cy="50%" r="70%">
+      <stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${(lv('vig')*.9).toFixed(2)}"/>
+    </radialGradient>
+    <clipPath id="fl"><rect x="10" y="300" width="280" height="60"/></clipPath>
+  </defs>
+
+  <g font-weight="700">
+    <text x="14" y="14" font-size="7" fill="#ff4d36" letter-spacing="1.5">1UP</text>
+    <text x="14" y="26" font-size="10" fill="#e9f7ff" letter-spacing="1">C${n}</text>
+    <text x="150" y="14" text-anchor="middle" font-size="7" fill="#ff4d36" letter-spacing="1.5">HI-SCORE</text>
+    <text x="150" y="26" text-anchor="middle" font-size="10" fill="#e9f7ff" letter-spacing="1">${String(f.iso).padStart(6, '0')}</text>
+    <text x="286" y="14" text-anchor="end" font-size="7" fill="#ff4d36" letter-spacing="1.5">STAGE</text>
+    <text x="286" y="26" text-anchor="end" font-size="10" fill="#6be04f" letter-spacing="1">${f.g.toUpperCase()}</text>
   </g>
 
-  <g font-size="6.5" fill="rgba(143,230,255,.6)" letter-spacing="1">
-    <text x="18" y="50">35MM · TRANSPORT</text>
-    <text x="150" y="52" text-anchor="middle">FRAME</text>
-    <text x="70" y="146" text-anchor="middle">SUPPLY</text>
-    <text x="230" y="146" text-anchor="middle">TAKE-UP</text>
-  </g>
-  <text x="282" y="50" text-anchor="end" fill="#ff4d36" font-size="6.5" letter-spacing="1">● EXP<animate attributeName="opacity" values="1;.2;1" dur="1s" repeatCount="indefinite"/></text>
-  ${reel(70, 90, 26, '#e9f7ff')}
-  ${reel(230, 90, 14, '#e9f7ff')}
-  <path d="M70 120 L102 132 H198 L230 120" stroke="#8fe6ff" stroke-width="1" fill="none"/>
-  <path d="M70 120 L102 132 H198 L230 120" stroke="#8fe6ff" stroke-width="3" fill="none" stroke-dasharray="1 3" opacity=".7">
-    <animate attributeName="stroke-dashoffset" values="0;-8" dur=".5s" repeatCount="indefinite"/></path>
-  <circle cx="102" cy="132" r="3" fill="#0a1517" stroke="#4d8dff"/><circle cx="198" cy="132" r="3" fill="#0a1517" stroke="#4d8dff"/>
-  <circle cx="150" cy="108" r="6" fill="none" stroke="#6be04f"/>
-  <path d="M150 114V125" stroke="#6be04f" stroke-dasharray="1.5 2"/>
-  <rect x="141" y="125" width="18" height="14" fill="#0a1517" stroke="#ff4d36"/>
-  <text x="150" y="84" text-anchor="middle" fill="#e9f7ff" font-size="30" font-weight="200" font-family="${SANS}">${pad(frame)}<tspan font-size="11" fill="rgba(143,230,255,.6)">/36</tspan></text>
+  <g fill="#e9f7ff" opacity=".8">${stars}</g>
 
-  ${dials}
-
-  <g font-size="7.5" fill="rgba(143,230,255,.75)" letter-spacing="1">
-    <text x="18" y="263">D-LOG H · ${L(f).toUpperCase()}</text>
-    <text x="${X1}" y="346" text-anchor="end">LOG H</text>
-    <text x="20" y="${Y1+4}">D</text>
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0 0;12 0;24 0;12 0;0 0;-12 0;-24 0;-12 0" dur="${speed}s" calcMode="discrete" repeatCount="indefinite"/>
+    <g>${wave(0)}<animate attributeName="opacity" values="1;0" dur=".8s" calcMode="discrete" repeatCount="indefinite"/></g>
+    <g opacity="0">${wave(1)}<animate attributeName="opacity" values="0;1" dur=".8s" calcMode="discrete" repeatCount="indefinite"/></g>
   </g>
-  <g stroke="rgba(42,120,255,.3)" stroke-width=".6" stroke-dasharray="1 3">${grid}</g>
-  <path d="M${X0} ${Y1} V${Y0} H${X1}" stroke="#2a78ff" fill="none"/>
+
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="-60 0;60 0;-60 0" dur="5s" repeatCount="indefinite"/>
+    <rect x="149" width="2" height="7" fill="${COL[2]}">
+      <animate attributeName="y" values="194;40" dur=".9s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="1;1;0" keyTimes="0;.85;1" dur=".9s" repeatCount="indefinite"/>
+    </rect>
+    <g ${glow}>
+      <use href="#sp_ship" x="141" y="200" fill="#e9f7ff"/>
+      <rect x="149" y="206" width="2" height="4" fill="#ff4d36"/>
+    </g>
+  </g>
+
+  <text x="14" y="252" font-size="6.5" fill="rgba(143,230,255,.75)" letter-spacing="1">TERRAIN · D-LOG H · ${L(f).toUpperCase()}</text>
+  <g ${glow}><circle cx="70" cy="300" r="30" fill="url(#sun)"/></g>
+  <g fill="#0a1517"><rect x="38" y="281" width="64" height="2"/><rect x="38" y="288" width="64" height="3"/><rect x="38" y="295" width="64" height="4"/></g>
+  <path d="${ridge}" fill="url(#ter)"/>
   ${curves}
-  <line x1="${X0}" x2="${X0}" y1="${Y1}" y2="${Y0}" stroke="#ff4d36" stroke-width=".8" opacity=".8">
-    <animate attributeName="x1" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
-    <animate attributeName="x2" from="${X0}" to="${X1}" dur="3.2s" repeatCount="indefinite"/>
-  </line>
+  <line x1="10" y1="300" x2="290" y2="300" stroke="#8fe6ff" stroke-width="1"/>
+  <g clip-path="url(#fl)" stroke="#2a78ff" stroke-width=".8" opacity=".75">${floor}</g>
 
-  <text x="150" y="372" text-anchor="middle" fill="#8fe6ff" font-size="15" font-style="italic" font-family="${SERIF}">2AgBr + hν → 2Ag⁰ + Br₂</text>
-  <text x="150" y="387" text-anchor="middle" fill="rgba(143,230,255,.6)" font-size="7.5" letter-spacing="1.5">PROCESS ${f.proc}</text>
+  <rect x="0" y="30" width="300" height="334" fill="url(#vg)" pointer-events="none"/>
+
+  <text x="150" y="377" text-anchor="middle" font-size="11" font-weight="700" fill="#ff4d36" letter-spacing="3">INSERT NEGATIVE<animate attributeName="opacity" values="1;0;1" dur="1.2s" calcMode="discrete" repeatCount="indefinite"/></text>
+  <text x="150" y="389" text-anchor="middle" font-size="6" fill="rgba(143,230,255,.6)" letter-spacing="1">STARS=GRAIN · SPEED=ISO · GLOW=HALATION · DARK=VIGNETTE</text>
 </svg>`;
 }
 const syncLab = () => {
@@ -1012,6 +1131,7 @@ function loadImage(file){
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.activeTexture(gl.TEXTURE0);
     srcC = c; iw = w; ih = h; ready = true; seed = Math.floor(Math.random()*1e6);
+    rollLeak();   // cada foto, su propia fuga
     URL.revokeObjectURL(url);
     $('empty').style.display = 'none'; $('empty').innerHTML = '';
     out.style.display = 'block'; $('save').disabled = false;
@@ -1057,9 +1177,11 @@ function syncParams(){
   r.querySelector('.sw').setAttribute('aria-pressed', String(ON.date));
   r.classList.toggle('off', !ON.date);
   r.querySelector('b').textContent = ON.date ? 'ON' : 'OFF';
-  $('stampv').textContent = dateText();
+  const sv = $('stampv'); sv.textContent = dateText(); sv.classList.toggle('mono', !!cur.bw);
 }
 document.querySelectorAll('.sw').forEach(b => b.onclick = () => { const k = b.dataset.k; ON[k] = !ON[k]; syncParams(); req(); });
+// Tocar «Leak ↻» sortea otra fuga (y la activa si estaba apagada).
+$('leakRoll').onclick = () => { rollLeak(); if(!ON.leak){ ON.leak = true; syncParams(); } req(); };
 
 const sl = $('strength');
 function syncStr(){ sl.style.setProperty('--p', sl.value + '%'); $('v_strength').textContent = String(sl.value).padStart(3, '0'); }
@@ -1143,8 +1265,59 @@ const release = () => { down = false; clearTimeout(holdT); hold(false); };
 stage.addEventListener('click', () => { if(!ready && !moved) $('file').click(); });
 stage.addEventListener('contextmenu', e => e.preventDefault());
 
-$('file').addEventListener('change', e => { if(e.target.files[0]) loadImage(e.target.files[0]); e.target.value = ''; });
+$('file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if(f){
+    photoDate = null;
+    exifDate(f).then(d => { photoDate = d; syncParams(); req(); });
+    loadImage(f);
+  }
+  e.target.value = '';
+});
 $('save').onclick = save;
+
+// ---------- Icono de la app (arcade) ----------
+// Se dibuja aquí mismo: noche estrellada, invasor-bote verde neón, sol sintético y rejilla.
+function makeIcon(size){
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'), s = size/180;
+  x.fillStyle = '#0a1517'; x.fillRect(0, 0, size, size);
+  let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  x.fillStyle = '#e9f7ff';
+  for(let i = 0; i < 40; i++){ x.globalAlpha = .3 + r()*.6; x.fillRect(r()*size, r()*104*s, 1.6*s, 1.6*s); }
+  x.globalAlpha = 1;
+  const H = 134*s;
+  const g = x.createLinearGradient(0, H - 28*s, 0, H);
+  g.addColorStop(0, '#ffd24a'); g.addColorStop(1, '#ff4d36');
+  x.save(); x.beginPath(); x.rect(0, 0, size, H); x.clip();
+  x.shadowColor = '#ff4d36'; x.shadowBlur = 16*s;
+  x.fillStyle = g; x.beginPath(); x.arc(90*s, H, 28*s, 0, Math.PI*2); x.fill();
+  x.shadowBlur = 0; x.fillStyle = '#0a1517';
+  [[118,2],[124,3],[129,4]].forEach(([y, hh]) => x.fillRect(60*s, y*s, 60*s, hh*s));
+  x.restore();
+  x.strokeStyle = '#2a78ff'; x.lineWidth = 1.5*s; x.globalAlpha = .85;
+  for(let i = -6; i <= 6; i++){ x.beginPath(); x.moveTo((90 + i*10)*s, H); x.lineTo((90 + i*45)*s, size); x.stroke(); }
+  [140, 148, 159, 175].forEach(y => { x.beginPath(); x.moveTo(0, y*s); x.lineTo(size, y*s); x.stroke(); });
+  x.globalAlpha = 1; x.strokeStyle = '#8fe6ff'; x.lineWidth = 2*s;
+  x.beginPath(); x.moveTo(0, H); x.lineTo(size, H); x.stroke();
+  const p = 10*s, ox = 50*s, oy = 20*s;
+  x.shadowColor = '#6be04f'; x.shadowBlur = 14*s; x.fillStyle = '#6be04f';
+  SPR.can[0].forEach((row, j) => [...row].forEach((ch, i) => {
+    if(ch === '#') x.fillRect(Math.floor(ox + i*p), Math.floor(oy + j*p), Math.ceil(p), Math.ceil(p));
+  }));
+  x.shadowBlur = 0;
+  return c.toDataURL('image/png');
+}
+const ICON = makeIcon(180);
+[['apple-touch-icon', ICON], ['icon', ICON]].forEach(([rel, href]) => {
+  const l = document.createElement('link'); l.rel = rel; l.href = href; document.head.appendChild(l);
+});
+// Abrir la app con #icon muestra el icono en grande para guardarlo y subirlo al repo si hiciera falta.
+if(location.hash === '#icon'){
+  const im = new Image(); im.src = makeIcon(1024);
+  im.style.cssText = 'position:fixed;inset:0;margin:auto;width:80vw;max-width:512px;z-index:99;border-radius:22%';
+  document.body.appendChild(im);
+}
 
 buildList();
 pick(0, true);
