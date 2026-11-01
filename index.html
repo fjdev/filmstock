@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
+  @property --p { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
   :root {
     color-scheme: dark;
     --bg: #0a1517;
@@ -21,17 +22,13 @@
     --cyan-d: rgba(143,230,255,.62);
     --green: #6be04f;
     --red: #ff4d36;
+    --off: #10303a;
     --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; overflow: hidden; }
   body { background: var(--bg); color: var(--cyan); font: 15px/1.3 var(--serif); -webkit-font-smoothing: antialiased; }
-  /* Líneas de barrido y viñeta de monitor */
-  body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 60;
-    background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
-      radial-gradient(130% 90% at 50% 45%, transparent 55%, rgba(0,0,0,.45)); }
 
   .app { height: 100vh; height: 100dvh; max-width: 560px; margin: 0 auto;
          display: grid; grid-template-rows: auto minmax(0,1fr) auto auto auto; gap: 12px;
@@ -71,6 +68,14 @@
   #empty svg { width: min(62%, 250px); height: auto; filter: drop-shadow(0 0 6px rgba(107,224,79,.35)); }
   #empty p { margin: 0; font: 10px var(--mono); letter-spacing: .28em; color: var(--cyan-d); text-transform: uppercase; }
   #empty p::after { content: '_'; animation: bl 1s steps(1) infinite; }
+  /* Aviso de cambio de canal */
+  .flash { position: absolute; z-index: 3; top: 30px; left: 50%; transform: translateX(-50%);
+           display: flex; align-items: center; gap: 8px; padding: 5px 10px; border: 1px solid var(--red);
+           background: rgba(10,21,23,.85); color: var(--red); font: 10px var(--mono); letter-spacing: .2em;
+           text-transform: uppercase; text-shadow: 0 0 6px rgba(255,77,54,.6); white-space: nowrap;
+           opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .flash b { font: 400 22px/1 var(--serif); letter-spacing: .02em; }
+  .flash.show { opacity: 1; transition: none; }
 
   /* Botones */
   button, .btn {
@@ -81,42 +86,53 @@
   button:active, .btn:active { background: rgba(143,230,255,.16); }
   button:disabled { opacity: .35; }
   input[type=file] { display: none; }
-  .actions { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+  .actions { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
   .actions .btn, .actions button { display: flex; align-items: center; justify-content: center; }
-  #filmBtn { flex-direction: column; gap: 4px; padding: 7px 6px; }
-  #filmBtn small { font: 8px var(--mono); letter-spacing: .16em; color: var(--red); text-transform: uppercase;
+  .filmctl { display: grid; grid-template-columns: 34px minmax(0,1fr) 34px; }
+  .filmctl .arr { font: 400 28px/1 var(--serif); padding: 0; }
+  #filmBtn { flex-direction: column; gap: 4px; padding: 7px 4px; border-left: 0; border-right: 0; min-width: 0; }
+  #filmBtn small { font: 8px var(--mono); letter-spacing: .14em; color: var(--red); text-transform: uppercase;
                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
                    text-shadow: 0 0 6px rgba(255,77,54,.5); }
 
   /* Paneles */
   .panel { padding: 14px 12px 10px; }
   .panel h2 { position: absolute; top: -7px; left: 12px; margin: 0; padding: 0 6px; background: var(--bg);
-              font: 400 9px var(--mono); letter-spacing: .3em; color: var(--line); text-transform: uppercase; }
+              font: 400 9px var(--mono); letter-spacing: .3em; color: var(--line); text-transform: uppercase; z-index: 1; }
 
-  .str { display: flex; align-items: center; gap: 10px; font: 9px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--cyan-d); }
-  .str b { width: 30px; text-align: right; font: 600 12px var(--mono); color: var(--cyan); text-shadow: 0 0 8px rgba(143,230,255,.7); }
-  .str input[type=range] {
-    -webkit-appearance: none; appearance: none; flex: 1; height: 16px; margin: 0; outline: none;
+  /* Parámetros: barras segmentadas */
+  .rows { display: grid; gap: 7px; }
+  .row { display: grid; grid-template-columns: 30px 70px minmax(0,1fr) 32px; align-items: center; gap: 8px;
+         font: 9px var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cyan-d); transition: opacity .2s; }
+  .row b { text-align: right; font: 600 11px var(--mono); letter-spacing: .05em; color: var(--cyan);
+           font-variant-numeric: tabular-nums; text-shadow: 0 0 8px rgba(143,230,255,.7); }
+  .bar, .row input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 14px; margin: 0; outline: none;
     background:
-      linear-gradient(90deg, transparent var(--p,100%), #10303a var(--p,100%)),
+      linear-gradient(90deg, transparent var(--p), var(--off) var(--p)),
       linear-gradient(90deg, var(--cyan), var(--line));
     -webkit-mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
             mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 8px);
   }
-  .str input[type=range]::-webkit-slider-runnable-track { background: transparent; height: 16px; }
-  .str input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 16px; background: transparent; }
-  .str input[type=range]::-moz-range-thumb { width: 14px; height: 16px; background: transparent; border: 0; }
+  .bar { transition: --p .3s ease, opacity .2s; }
+  .row input[type=range]::-webkit-slider-runnable-track { background: transparent; height: 14px; }
+  .row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: transparent; }
+  .row input[type=range]::-moz-range-thumb { width: 14px; height: 14px; background: transparent; border: 0; }
+  .row.off .bar { opacity: .3; }
+  .row.off b { opacity: .45; }
+  .row.na { opacity: .3; }
+  .sw { position: relative; width: 30px; height: 16px; padding: 0; border: 1px solid var(--line);
+        background: transparent; box-shadow: none; }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 10px;
+               background: var(--line-d); transition: transform .15s; }
+  .sw[aria-pressed=true] { border-color: var(--cyan); }
+  .sw[aria-pressed=true]::after { transform: translateX(14px); background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .sw:disabled { border-style: dashed; opacity: 1; }
+  .stampv { font: 12px "Courier New", monospace; letter-spacing: .1em; color: #ff8a2a;
+            text-shadow: 0 0 6px rgba(255,90,0,.8); text-transform: none; }
+  .row.off .stampv { opacity: .3; }
 
-  .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
-  .chip { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 5px;
-          font-size: 15px; background: transparent; border-color: var(--line-d); box-shadow: none; }
-  .chip small { font: 8px var(--mono); letter-spacing: .12em; color: var(--cyan-d); text-shadow: none; }
-  .chip[aria-pressed=true] { background: var(--cyan); color: #061216; border-color: var(--cyan); text-shadow: none;
-                             box-shadow: 0 0 12px rgba(143,230,255,.45); }
-  .chip[aria-pressed=true] small { color: #0b3a46; }
-  .chip:disabled { opacity: .3; border-style: dashed; }
-
-  .info { min-height: 0; overflow: hidden; }
+  /* Ficha */
   .ihead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   #iname { font: 400 26px/1 var(--serif); color: var(--cyan); text-shadow: 0 0 10px rgba(143,230,255,.45);
            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -130,20 +146,23 @@
   .uses { margin-top: 5px; font-size: 14px; -webkit-line-clamp: 2; }
   .uses em { font: normal 9px var(--mono); letter-spacing: .2em; color: var(--green); margin-right: 4px; }
 
-  /* Selector de películas */
-  .sheet { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center;
-           background: rgba(4,9,10,.8); padding: 0 10px calc(env(safe-area-inset-bottom) + 10px); }
+  /* Lista de películas: abajo, sin tapar la foto */
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: center;
+           padding: 0 10px calc(env(safe-area-inset-bottom) + 10px); pointer-events: none; }
   .sheet[hidden] { display: none; }
-  .sheet-in { width: 100%; max-width: 540px; max-height: 82dvh; overflow: auto; background: var(--bg); padding: 16px 12px 14px; }
-  .sheet-h { display: flex; justify-content: space-between; align-items: center; }
-  .sheet-h span { font: 400 26px var(--serif); text-shadow: 0 0 10px rgba(143,230,255,.45); }
-  .sheet-h button { font: 12px var(--mono); padding: 7px 11px; }
-  .gh { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font: 9px var(--mono);
+  .sheet-in { pointer-events: auto; width: 100%; max-width: 540px; max-height: 46dvh; overflow: auto;
+              background: var(--bg); padding: 12px 12px 12px; }
+  .sheet-h { display: flex; justify-content: space-between; align-items: center; position: sticky; top: -12px;
+             background: var(--bg); padding: 4px 0 2px; z-index: 1; }
+  .sheet-h span { font: 400 22px var(--serif); text-shadow: 0 0 10px rgba(143,230,255,.45); }
+  .sheet-h button { font: 12px var(--mono); padding: 6px 10px; }
+  .gh { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font: 9px var(--mono);
         letter-spacing: .3em; text-transform: uppercase; color: var(--green); }
   .gh::after { content: ''; flex: 1; height: 1px; background: var(--line-d); }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .grid button { display: flex; align-items: center; gap: 8px; font-size: 18px; text-align: left; padding: 9px 10px;
-                 box-shadow: none; border-color: var(--line-d); }
+  .grid button { display: flex; align-items: center; gap: 8px; font-size: 17px; text-align: left; padding: 8px 10px;
+                 box-shadow: none; border-color: var(--line-d); min-width: 0; }
+  .grid button span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .grid button i { font: normal 9px var(--mono); opacity: .6; }
   .grid button u { margin-left: auto; text-decoration: none; font: 10px var(--mono); opacity: .7; }
   .grid button.on { border-color: var(--red); color: var(--red); background: rgba(255,77,54,.1); text-shadow: 0 0 8px rgba(255,77,54,.6); }
@@ -152,7 +171,7 @@
          font: 10px var(--mono); color: var(--red); white-space: pre-wrap; background: rgba(20,0,0,.85); padding: 6px; }
   #err:empty { display: none; }
 
-  @media (prefers-reduced-motion: reduce) { .live, #empty p::after { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .live, #empty p::after { animation: none; } .bar { transition: none; } }
 </style>
 </head>
 <body>
@@ -166,8 +185,9 @@
     <span class="cr a">+</span><span class="cr b">+</span><span class="cr c">+</span><span class="cr d">+</span>
     <div class="hud tl" id="hudfilm">—</div>
     <div class="hud tr" id="hudres">—</div>
-    <div class="hud bl">Hold ▸ original</div>
+    <div class="hud bl">Swipe ⇆ film · hold ▸ orig</div>
     <div class="hud br" id="hudstate">Stby</div>
+    <div class="flash" id="flash"><b id="fch">C01</b><span id="fnm"></span></div>
     <div id="empty">
       <svg viewBox="0 0 200 150" aria-hidden="true">
         <g stroke="#2a78ff" fill="none" stroke-width=".8" opacity=".85">
@@ -191,7 +211,11 @@
   </div>
 
   <nav class="actions">
-    <button id="filmBtn" type="button">Film ▾<small id="filmSub">—</small></button>
+    <div class="filmctl">
+      <button id="prev" class="arr" type="button" aria-label="Película anterior">‹</button>
+      <button id="filmBtn" type="button">Film ▾<small id="filmSub">—</small></button>
+      <button id="next" class="arr" type="button" aria-label="Película siguiente">›</button>
+    </div>
     <label class="btn" for="file">Import</label>
     <input id="file" type="file" accept="image/*">
     <button id="save" type="button" disabled>Save</button>
@@ -199,11 +223,23 @@
 
   <section class="panel box">
     <h2>Parameters</h2>
-    <div class="str"><span>Strength</span><input type="range" id="strength" min="0" max="100" value="100"><b id="v_strength">100</b></div>
-    <div class="chips" id="chips"></div>
+    <div class="rows">
+      <div class="row"><span></span><span>Strength</span>
+        <input type="range" id="strength" min="0" max="100" value="100"><b id="v_strength">100</b></div>
+      <div class="row" id="r_grain"><button class="sw" data-k="grain" type="button" aria-label="Grain"></button>
+        <span>Grain</span><div class="bar"></div><b></b></div>
+      <div class="row" id="r_hal"><button class="sw" data-k="hal" type="button" aria-label="Halation"></button>
+        <span>Halation</span><div class="bar"></div><b></b></div>
+      <div class="row" id="r_vig"><button class="sw" data-k="vig" type="button" aria-label="Vignette"></button>
+        <span>Vignette</span><div class="bar"></div><b></b></div>
+      <div class="row" id="r_leak"><button class="sw" data-k="leak" type="button" aria-label="Light leak"></button>
+        <span>Leak</span><div class="bar"></div><b></b></div>
+      <div class="row" id="r_date"><button class="sw" data-k="date" type="button" aria-label="Date"></button>
+        <span>Date</span><span class="stampv" id="stampv"></span><b></b></div>
+    </div>
   </section>
 
-  <section class="panel box info">
+  <section class="panel box">
     <h2>Film data</h2>
     <div class="ihead"><span id="iname">—</span><span class="tag" id="itier">—</span></div>
     <div class="meta"><span class="tag" id="iiso">—</span><span class="tag" id="itype">—</span></div>
@@ -773,17 +809,16 @@ const bandsArr = o => { const a = new Float32Array(24); for(const k in o) a.set(
 const TIER = { A:'●', B:'◐', C:'○' };
 const TSHORT = { A:'Measured', B:'Reference', C:'Provisional' };
 
-// Interruptores: cada película trae sus valores; aquí solo se activan o desactivan.
+// Interruptores on/off. Los niveles son los de cada película y no se regulan.
 const ON = { grain:true, hal:true, vig:true, leak:false, date:false };
 const gsz = f => f.grain[0]*f.grain[1];
-const FEAT = {
-  grain: f => ({ ok:true, r: gsz(f) < .35 ? 'FINE' : gsz(f) < .65 ? 'MEDIUM' : 'COARSE' }),
-  hal:   f => f.hal[0] >= .1 ? { ok:true, r: f.hal[0] >= .8 ? 'STRONG' : 'MODERATE' } : { ok:false, r:'N/A' },
-  vig:   f => f.vig > 0 ? { ok:true, r: f.vig >= .3 ? 'STRONG' : f.vig >= .12 ? 'MEDIUM' : 'SOFT' } : { ok:false, r:'N/A' },
-  leak:  f => f.leak > 0 ? { ok:true, r:'EDGE' } : { ok:false, r:'N/A' },
-  date:  f => ({ ok:true, r: ON.date ? 'ON' : 'OFF' }),
+const LV = {
+  grain: f => ({ ok:true,           p: Math.min(1, gsz(f)/1.3) }),
+  hal:   f => ({ ok:f.hal[0] >= .1, p: Math.min(1, f.hal[0]) }),
+  vig:   f => ({ ok:f.vig > 0,      p: Math.min(1, f.vig/.4) }),
+  leak:  f => ({ ok:f.leak > 0,     p: Math.min(1, f.leak) }),
 };
-const on = k => ON[k] && FEAT[k](cur).ok;
+const on = k => ON[k] && LV[k](cur).ok;
 
 function draw(w, h){
   glc.width = w; glc.height = h; gl.viewport(0, 0, w, h);
@@ -797,7 +832,7 @@ function draw(w, h){
   gl.uniform1f(U.bw, p.bw); gl.uniform1f(U.contrast, p.contrast); gl.uniform1f(U.sCurve, p.curveS);
   gl.uniform1f(U.sat, p.sat); gl.uniform1f(U.soft, p.soft);
   gl.uniform3fv(U.bands, bandsArr(p.bands));
-  // La fuerza escala también los efectos de textura para que a 0 se vea el original.
+  // La fuerza escala también la textura para que a 0 se vea el original.
   gl.uniform1f(U.grainAmt, on('grain') ? p.grain[0]*s : 0);
   gl.uniform1f(U.grainSize, p.grain[1]);
   gl.uniform1f(U.grainChroma, p.grain[2]); gl.uniform1f(U.grainRough, p.grain[3]);
@@ -808,13 +843,15 @@ function draw(w, h){
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
-function stamp(x, w, h){
+function dateText(){
   const d = new Date(), p2 = n => String(n).padStart(2, '0');
-  const t = `'${String(d.getFullYear()).slice(2)}  ${p2(d.getMonth()+1)}  ${p2(d.getDate())}`;
+  return `'${String(d.getFullYear()).slice(2)}  ${p2(d.getMonth()+1)}  ${p2(d.getDate())}`;
+}
+function stamp(x, w, h){
   const fs = Math.round(Math.max(w, h) * .026);
   x.font = `${fs}px "Courier New", monospace`; x.textAlign = 'right'; x.textBaseline = 'bottom';
   x.shadowColor = 'rgba(255,90,0,.9)'; x.shadowBlur = fs*.35; x.fillStyle = '#ff8a2a';
-  x.fillText(t, w - fs*1.2, h - fs); x.shadowBlur = 0;
+  x.fillText(dateText(), w - fs*1.2, h - fs); x.shadowBlur = 0;
 }
 
 function render(){
@@ -884,24 +921,31 @@ function save(){
   }, 'image/jpeg', .95);
 }
 
-// ---------- Interfaz ----------
-const CHIPS = [['grain','Grain'], ['hal','Halation'], ['vig','Vignette'], ['leak','Leak'], ['date','Date']];
-CHIPS.forEach(([k, l]) => {
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = 'chip'; b.id = 'c_' + k;
-  b.innerHTML = `<span>${l}</span><small></small>`;
-  b.onclick = () => { ON[k] = !ON[k]; syncChips(); req(); };
-  $('chips').appendChild(b);
-});
-function syncChips(){
-  CHIPS.forEach(([k]) => {
-    const b = $('c_' + k), s = FEAT[k](cur);
+// ---------- Parámetros ----------
+function syncParams(){
+  ['grain','hal','vig','leak'].forEach(k => {
+    const r = $('r_' + k), s = LV[k](cur), b = r.querySelector('.sw');
     b.disabled = !s.ok;
     b.setAttribute('aria-pressed', String(s.ok && ON[k]));
-    b.querySelector('small').textContent = s.r;
+    r.classList.toggle('na', !s.ok);
+    r.classList.toggle('off', s.ok && !ON[k]);
+    r.querySelector('.bar').style.setProperty('--p', (s.ok ? s.p*100 : 0) + '%');
+    r.querySelector('b').textContent = s.ok ? String(Math.round(s.p*100)).padStart(3, '0') : 'N/A';
   });
+  const r = $('r_date');
+  r.querySelector('.sw').setAttribute('aria-pressed', String(ON.date));
+  r.classList.toggle('off', !ON.date);
+  r.querySelector('b').textContent = ON.date ? 'ON' : 'OFF';
+  $('stampv').textContent = dateText();
 }
+document.querySelectorAll('.sw').forEach(b => b.onclick = () => { const k = b.dataset.k; ON[k] = !ON[k]; syncParams(); req(); });
 
+const sl = $('strength');
+function syncStr(){ sl.style.setProperty('--p', sl.value + '%'); $('v_strength').textContent = String(sl.value).padStart(3, '0'); }
+sl.addEventListener('input', () => { syncStr(); req(); });
+syncStr();
+
+// ---------- Películas ----------
 function buildList(){
   const list = $('list'); list.innerHTML = '';
   let g = null, grid = null;
@@ -913,16 +957,23 @@ function buildList(){
     }
     const b = document.createElement('button'); b.type = 'button';
     b.innerHTML = `<i>${pad(i+1)}</i><span>${L(f)}</span><u>${TIER[f.t]}</u>`;
-    b.onclick = () => { pick(i); $('sheet').hidden = true; };
+    b.onclick = () => pick(i);   // la lista se queda abierta para comparar
     grid.appendChild(b); f._btn = b;
   });
 }
 
-function pick(i){
-  ci = i; cur = FILMS[i];
+let flashT = 0;
+function flash(){
+  $('fch').textContent = 'C' + pad(ci+1); $('fnm').textContent = L(cur);
+  const f = $('flash'); f.classList.add('show');
+  clearTimeout(flashT); flashT = setTimeout(() => f.classList.remove('show'), 650);
+}
+
+function pick(i, quiet){
+  ci = (i + FILMS.length) % FILMS.length; cur = FILMS[ci];
   if(cur.curve) uploadLut(cur);
-  FILMS.forEach((f, j) => f._btn && f._btn.classList.toggle('on', j === i));
-  const n = pad(i+1);
+  FILMS.forEach((f, j) => f._btn && f._btn.classList.toggle('on', j === ci));
+  const n = pad(ci+1);
   $('chan').textContent = 'C' + n;
   $('hudfilm').textContent = `CH ${n} · ${L(cur)}`;
   $('filmSub').textContent = `${n} · ${L(cur)}`;
@@ -932,32 +983,52 @@ function pick(i){
   $('itype').textContent = cur.type;
   $('idesc').textContent = cur.d;
   $('iuses').textContent = cur.uses;
-  syncChips(); req();
+  syncParams(); req();
+  if(!quiet) flash();
 }
+const step = d => pick(ci + d);
 
-// Fuerza: el único valor regulable.
-const sl = $('strength');
-function syncStr(){ sl.style.setProperty('--p', sl.value + '%'); $('v_strength').textContent = String(sl.value).padStart(3, '0'); }
-sl.addEventListener('input', () => { syncStr(); req(); });
-syncStr();
-
-// Mantener pulsada la foto muestra el original.
-const stage = $('stage');
-const hold = v => { if(!ready || holding === v) return; holding = v; setState(); render(); };
-stage.addEventListener('pointerdown', e => { if(e.button > 0) return; hold(true); });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(t => stage.addEventListener(t, () => hold(false)));
-stage.addEventListener('contextmenu', e => e.preventDefault());
-
-// Selector de películas
-$('filmBtn').onclick = () => { $('sheet').hidden = false; };
+$('prev').onclick = () => step(-1);
+$('next').onclick = () => step(1);
+$('filmBtn').onclick = () => { $('sheet').hidden = !$('sheet').hidden; };
 $('close').onclick = () => { $('sheet').hidden = true; };
-$('sheet').addEventListener('click', e => { if(e.target.id === 'sheet') $('sheet').hidden = true; });
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight') step(1);
+  else if(e.key === 'ArrowLeft') step(-1);
+  else if(e.key === 'Escape') $('sheet').hidden = true;
+});
+
+// ---------- Gestos sobre la foto ----------
+// Deslizar: cambia de película (cada 48 px, se puede ir y volver sin soltar).
+// Mantener quieto: muestra el original.
+const stage = $('stage'), SWIPE = 48;
+let down = false, px = 0, py = 0, moved = false, holdT = 0;
+const hold = v => { if(!ready || holding === v) return; holding = v; setState(); render(); };
+stage.addEventListener('pointerdown', e => {
+  if(e.button > 0) return;
+  down = true; moved = false; px = e.clientX; py = e.clientY;
+  try { stage.setPointerCapture(e.pointerId); } catch(_){}
+  clearTimeout(holdT);
+  holdT = setTimeout(() => { if(down && !moved) hold(true); }, 180);
+});
+stage.addEventListener('pointermove', e => {
+  if(!down) return;
+  const dx = e.clientX - px, dy = e.clientY - py;
+  if(!moved && Math.hypot(dx, dy) > 10){ moved = true; clearTimeout(holdT); hold(false); }
+  if(Math.abs(dx) >= SWIPE && Math.abs(dx) > Math.abs(dy)){
+    step(dx < 0 ? 1 : -1);
+    px = e.clientX; py = e.clientY;
+  }
+});
+const release = () => { down = false; clearTimeout(holdT); hold(false); };
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => stage.addEventListener(t, release));
+stage.addEventListener('contextmenu', e => e.preventDefault());
 
 $('file').addEventListener('change', e => { if(e.target.files[0]) loadImage(e.target.files[0]); e.target.value = ''; });
 $('save').onclick = save;
 
 buildList();
-pick(0);
+pick(0, true);
 setState();
 </script>
 </body>
