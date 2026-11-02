@@ -580,6 +580,29 @@ const PATCH13 = {
    d:'Pastel cálida y fiel: sombras suaves, medios luminosos, blancos cremosos y grano muy fino.' },
 };
 FILMS.forEach(f => Object.assign(f, PATCH13[f.n] || {}));
+
+// Parche 14: comparación con el PDF de referencias (estimado, sin ver el render).
+// Portra 160: color rico y suave, blancos color crema, sombras algo verde-azuladas (el Porsche amarillo del PDF).
+// Pro 400H turquesa, Superia viva, C200 desvaída verde-amarilla, Lomography 800 más pálida, Tri-X la más dura.
+const PATCH14 = {
+ 'Portra 160': { d:'Cremosa y cálida: sombras suaves con un toque verde-azulado, medios luminosos, amarillos ricos, blancos color crema y grano muy fino.',
+   curve:[[0,.04],[.25,.275],[.5,.54],[.8,.845],[1,.965]], sat:1.04, soft:.24,
+   shTint:[-.008,.004,.010], midTint:[.014,.008,-.012], hiTint:[.026,.014,-.016],
+   bands:{R:[-4,.06,-.02],O:[2,-.02,0],Y:[3,.10,.03],G:[-4,-.08,.04],A:[0,-.06,-.03],B:[-3,-.06,-.03],P:[-11,-.05,.04],M:[0,-.10,-.02]} },
+ 'Pro 400H': { sat:.9, shTint:[-.010,.008,.014], midTint:[-.012,.012,.010], hiTint:[-.004,.010,.008],
+   bands:{R:[2,.02,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[20,.02,-.10],A:[6,.14,0],B:[-16,.14,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
+ 'Superia 400': { sat:1.1, contrast:1.14, curveS:.26, shTint:[-.010,.012,.010], hiTint:[-.012,.008,.002],
+   bands:{R:[3,.10,0],O:[3,.12,.01],Y:[-2,-.04,.01],G:[12,.04,-.08],A:[0,.06,-.03],B:[-4,.12,-.05],P:[4,0,0],M:[-4,.12,.03]} },
+ 'Fujifilm C200': { sat:.84, contrast:.94, curveS:.06, lift:[.036,.038,.030],
+   shTint:[-.002,.006,-.004], midTint:[.006,.010,-.008], hiTint:[.012,.010,-.010],
+   bands:{R:[3,0,0],O:[2,-.04,0],Y:[-3,-.06,0],G:[-8,.02,-.02],B:[2,-.10,-.02]} },
+ 'Lomography 800': { curve:[[0,.06],[.15,.17],[.5,.5],[.85,.88],[1,.97]], sat:1,
+   shTint:[-.004,.004,.016], midTint:[.004,0,-.004], hiTint:[.006,.004,-.002] },
+ 'Tri-X 400': { contrast:1.24, curveS:.46, grain:[.56,1.4,0,.8] },
+ 'HP5+': { contrast:1.06, curveS:.22 },
+};
+FILMS.forEach(f => Object.assign(f, PATCH14[f.n] || {}));
+
 // La fuga es de la cámara: disponible en todas (50; desechable 70). Color según la película:
 // negativo color naranja-rojizo, diapositiva amarillo pálido, B/N velo blanco. El núcleo es más claro en todas.
 FILMS.forEach(f => {
@@ -593,23 +616,6 @@ const KEEP = ['Gold 200','Ultramax 400','Portra 160','Portra 800','Ektar 100','V
   'Superia 400','Fujifilm C200','Pro 400H','CineStill 400D','CineStill 800T','Lomography 800',
   'Tri-X 400','HP5+','Fomapan 200'];
 FILMS.splice(0, FILMS.length, ...KEEP.map(n => FILMS.find(f => f.n === n)).filter(Boolean));
-
-// Parche 14: tras comparar con el PDF de referencias (estimado, sin ver el render).
-const PATCH14 = {
- 'Portra 160': { curve:[[0,.045],[.25,.285],[.5,.55],[.8,.845],[1,.965]], sat:.92, soft:.2,
-   shTint:[-.006,.004,.008], midTint:[.010,.006,-.010], hiTint:[.016,.010,-.006],
-   bands:{R:[-4,.04,-.02],O:[1,-.08,-.01],Y:[2,-.04,-.01],G:[-4,-.10,.04],A:[0,-.10,-.04],B:[-3,-.10,-.02],P:[-11,-.05,.04],M:[0,-.10,-.02]} },
- 'Pro 400H': { sat:.9, shTint:[-.010,.008,.014], midTint:[-.012,.012,.010], hiTint:[-.004,.010,.008],
-   bands:{R:[2,.02,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[20,.02,-.10],A:[6,.14,0],B:[-16,.14,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
- 'Superia 400': { sat:1.1, contrast:1.14, curveS:.26, shTint:[-.010,.012,.010], hiTint:[-.012,.008,.002],
-   bands:{R:[3,.10,0],O:[3,.12,.01],Y:[-2,-.04,.01],G:[12,.04,-.08],A:[0,.06,-.03],B:[-4,.12,-.05],P:[4,0,0],M:[-4,.12,.03]} },
- 'Fujifilm C200': { sat:.84, contrast:.94, curveS:.06, lift:[.036,.038,.030],
-   shTint:[-.002,.006,-.004], midTint:[.006,.010,-.008], hiTint:[.012,.010,-.010],
-   bands:{R:[3,0,0],O:[2,-.04,0],Y:[-3,-.06,0],G:[-8,.02,-.02],B:[2,-.10,-.02]} },
- 'Lomography 800': { curve:[[0,.06],[.15,.17],[.5,.5],[.85,.88],[1,.97]], sat:1,
-   shTint:[-.004,.004,.016], midTint:[.004,0,-.004], hiTint:[.006,.004,-.002] },
-};
-FILMS.forEach(f => Object.assign(f, PATCH14[f.n] || {}));
 
 // ---------- Curvas tonales (spline monótona) ----------
 function curveLUT(pts){
@@ -707,8 +713,6 @@ float gnoise(vec2 p, uint s){
   float k = 0.4*grainRough;
   return (a*(1.-k) + b*k - .5) * 2.6;
 }
-
-
 
 // Una mancha de fuga: lengua de luz que entra desde un borde, más profunda en su centro y con contorno irregular.
 float leakBlob(vec4 p, vec2 q){
@@ -980,7 +984,7 @@ function setState(){
   s.classList.toggle('ok', ready && !holding);
 }
 
-// ---------- Recreativa (pantalla sin foto) ----------
+// ---------- Pantalla sin foto: panel de control ----------
 // Curva característica de la película: sus curvas y tintes reales, con las diferencias entre canales exageradas ×4.
 function toneCurves(f){
   const N = 40, ch = [[], [], []], lf = v3(f.lift);
@@ -999,128 +1003,52 @@ function toneCurves(f){
   return ch;
 }
 
-// Sprites originales de 8×8 en dos fotogramas: bote de película, cristal de haluro y bicho-cámara.
-const SPR = {
-  can:  [["..####..",".#....#.","########","#.#..#.#","########","#.####.#","#.#..#.#","..#..#.."],
-         ["..####..",".#....#.","########","#.#..#.#","########","#.####.#",".##..##.","#......#"]],
-  xtal: [["#......#",".#.##.#.","..####..",".##..##.","########",".######.","..#..#..",".#....#."],
-         [".#....#.","..####..",".#.##.#.",".##..##.","########",".######.",".#....#.","#......#"]],
-  bug:  [[".##.....","########","#..##..#","#.#..#.#","#.#..#.#","#..##..#","########",".#....#."],
-         [".....##.","########","#..##..#","#.#..#.#","#.#..#.#","#..##..#","########","#......#"]],
-};
-const SHIP = ["...##....",".#######.","##..#..##","#..###..#","#..###..#","##..#..##",".#######.","#.......#"];
-const pix = (rows, p) => rows.map((r, j) => [...r].map((ch, i) => ch === '#'
-  ? `<rect x="${i*p}" y="${j*p}" width="${p}" height="${p}"/>` : '').join('')).join('');
-
+// Osciloscopio con las trazas R, G y B de la curva tonal y cuatro medidores: grano, ISO, viñeteado y halation.
 function labSVG(f){
   const bw = !!f.bw, ch = toneCurves(f), n = pad(ci+1);
-  const lv = k => { const s = LV[k](f); return s.ok ? s.p : 0; };
-  const COL = bw ? ['#e9f7ff', '#b7c6ca', '#8e9ea2'] : ['#ff4d36', '#6be04f', '#8fe6ff'];
+  const lv = k => { const s = LV[k](f); return s.ok ? Math.round(s.p*100) : 0; };
+  const RED = '#ff4d36', GRN = '#6be04f', BLU = '#5b9cff', VIO = '#a86cff', CY = '#8fe6ff';
+  const traces = bw ? [[ch[1], '#e9f7ff']] : [[ch[0], RED], [ch[1], GRN], [ch[2], BLU]];
+  const ser = 'style="font-family:var(--serif)"', mono = 'style="font-family:var(--mono)"';
+  const line = c => c.map((v, i) => (30 + i/(c.length-1)*320).toFixed(1) + ',' +
+    (268 - Math.min(1.15, Math.max(-.1, v))*170).toFixed(1)).join(' ');
+  const dur = Math.max(1.6, 7 - 1.4*Math.log2(f.iso/100)).toFixed(1);
 
-  // Cielo estrellado: cada película tiene el suyo (semilla fija) y más estrellas cuanto más grano.
-  let sd = (ci + 1) * 7919;
-  const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  let stars = '';
-  const nStars = 24 + Math.round(lv('grain')*70);
-  for(let i = 0; i < nStars; i++){
-    const x = (10 + rnd()*280).toFixed(1), y = (34 + rnd()*200).toFixed(1), r = (.4 + rnd()*.7).toFixed(2);
-    const tw = rnd() < .35
-      ? `<animate attributeName="opacity" values="1;.15;1" dur="${(1 + rnd()*2).toFixed(1)}s" begin="-${(rnd()*2).toFixed(1)}s" repeatCount="indefinite"/>` : '';
-    stars += `<circle cx="${x}" cy="${y}" r="${r}">${tw}</circle>`;
-  }
+  let s = `<svg viewBox="0 0 380 520" aria-hidden="true">
+  <defs><clipPath id="sc"><rect x="14" y="50" width="352" height="240"/></clipPath></defs>
+  <text x="16" y="28" ${mono} font-size="13" font-weight="700" letter-spacing="2" fill="${CY}">C${n} · ${L(f).toUpperCase()}</text>`;
+  [0,1,2].forEach(i => s += `<rect x="${326 + i*14}" y="18" width="9" height="9" fill="${i === 0 ? GRN : 'none'}" stroke="${GRN}" stroke-width="1">` +
+    (i === 2 ? `<animate attributeName="fill" values="none;${GRN};none" dur="1.4s" repeatCount="indefinite"/>` : '') + `</rect>`);
+  s += `<rect x="14" y="50" width="352" height="240" fill="none" stroke="#2a78ff" stroke-width="1" opacity=".6"/>`;
+  [[14,50,1,1],[366,50,-1,1],[14,290,1,-1],[366,290,-1,-1]].forEach(([x, y, a, b]) =>
+    s += `<polyline points="${x},${y + b*14} ${x},${y} ${x + a*14},${y}" fill="none" stroke="${CY}" stroke-width="2"/>`);
+  s += `<g stroke="#2a78ff" stroke-width=".6" opacity=".35">`;
+  for(let i = 1; i < 8; i++) s += `<line x1="${14 + i*44}" y1="50" x2="${14 + i*44}" y2="290"/>`;
+  for(let j = 1; j < 6; j++) s += `<line x1="14" y1="${50 + j*40}" x2="366" y2="${50 + j*40}"/>`;
+  s += `</g><line x1="30" y1="268" x2="350" y2="98" stroke="${CY}" stroke-width=".8" stroke-dasharray="3 5" opacity=".4"/><g clip-path="url(#sc)">`;
+  traces.forEach(([c, col]) => {
+    const p = line(c);
+    s += `<polyline points="${p}" fill="none" stroke="${col}" stroke-width="6" opacity=".15"/>` +
+         `<polyline points="${p}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+  });
+  s += `<line x1="14" y1="50" x2="14" y2="290" stroke="#e9f7ff" stroke-width="1.2" opacity=".8">` +
+       `<animate attributeName="x1" values="14;366" dur="${dur}s" repeatCount="indefinite"/>` +
+       `<animate attributeName="x2" values="14;366" dur="${dur}s" repeatCount="indefinite"/></line></g>`;
 
-  // Invasores: marchan más rápido cuanto más ISO.
-  const types = ['can', 'xtal', 'bug'];
-  let defs = '';
-  types.forEach(t => [0, 1].forEach(k => defs += `<g id="sp_${t}${k}">${pix(SPR[t][k], 2)}</g>`));
-  defs += `<g id="sp_ship">${pix(SHIP, 2)}</g>`;
-  const wave = k => types.map((t, r) => `<g fill="${COL[r]}">` +
-    [0,1,2,3,4,5].map(c => `<use href="#sp_${t}${k}" x="${54 + c*34}" y="${44 + r*24}"/>`).join('') + `</g>`).join('');
-  const speed = Math.max(1.6, 6.4 - 1.2*Math.log2(f.iso/100)).toFixed(1);
-
-  // Halation: resplandor en el sol y en la nave.
-  const hal = lv('hal');
-  const glow = hal > 0 ? 'filter="url(#glow)"' : '';
-
-  // Terreno: la curva D-LOG convertida en montaña.
-  const X0 = 10, X1 = 290, Y0 = 300, Y1 = 226;
-  const cl = y => Math.min(1, Math.max(0, y));
-  const pts = a => a.map((y, i) => `${(X0 + (X1-X0)*i/(a.length-1)).toFixed(1)} ${(Y0 - (Y0-Y1)*cl(y)).toFixed(1)}`);
-  const mean = ch[0].map((_, i) => (ch[0][i] + ch[1][i] + ch[2][i])/3);
-  const ridge = `M${X0} ${Y0} L${pts(mean).join(' L')} L${X1} ${Y0} Z`;
-  const curves = bw
-    ? `<path d="M${pts(ch[1]).join(' L')}" stroke="#e9f7ff" stroke-width="1.4" fill="none"/>`
-    : ['#ff4d36','#6be04f','#8fe6ff'].map((c, i) => `<path d="M${pts(ch[i]).join(' L')}" stroke="${c}" stroke-width="1.2" fill="none" opacity=".9"/>`).join('');
-
-  // Suelo de rejilla que avanza.
-  let floor = '';
-  for(let i = 0; i <= 10; i++){ const dx = i - 5; floor += `<line x1="${150 + dx*12}" y1="300" x2="${150 + dx*64}" y2="360"/>`; }
-  for(let k = 0; k < 6; k++){
-    const a = `values="300;360" keyTimes="0;1" keySplines=".6 0 1 1" calcMode="spline" dur="2.4s" begin="-${(k*.4).toFixed(1)}s" repeatCount="indefinite"`;
-    floor += `<line x1="10" x2="290" y1="300" y2="300"><animate attributeName="y1" ${a}/><animate attributeName="y2" ${a}/></line>`;
-  }
-
-  return `<svg viewBox="0 0 300 392" aria-hidden="true" font-family="ui-monospace, Menlo, monospace">
-  <defs>
-    ${defs}
-    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="${(1.5 + hal*3).toFixed(1)}" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${bw ? '#f2f7f8' : '#ffd24a'}"/><stop offset="1" stop-color="${bw ? '#6f7f83' : '#ff4d36'}"/>
-    </linearGradient>
-    <linearGradient id="ter" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0d2a33"/><stop offset="1" stop-color="#0a1517"/>
-    </linearGradient>
-    <radialGradient id="vg" cx="50%" cy="50%" r="70%">
-      <stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${(lv('vig')*.9).toFixed(2)}"/>
-    </radialGradient>
-    <clipPath id="fl"><rect x="10" y="300" width="280" height="60"/></clipPath>
-  </defs>
-
-  <g font-weight="700">
-    <text x="14" y="14" font-size="7" fill="#ff4d36" letter-spacing="1.5">1UP</text>
-    <text x="14" y="26" font-size="10" fill="#e9f7ff" letter-spacing="1">C${n}</text>
-    <text x="150" y="14" text-anchor="middle" font-size="7" fill="#ff4d36" letter-spacing="1.5">HI-SCORE</text>
-    <text x="150" y="26" text-anchor="middle" font-size="10" fill="#e9f7ff" letter-spacing="1">${String(f.iso).padStart(6, '0')}</text>
-    <text x="286" y="14" text-anchor="end" font-size="7" fill="#ff4d36" letter-spacing="1.5">STAGE</text>
-    <text x="286" y="26" text-anchor="end" font-size="10" fill="#6be04f" letter-spacing="1">${f.g.toUpperCase()}</text>
-  </g>
-
-  <g fill="#e9f7ff" opacity=".8">${stars}</g>
-
-  <g>
-    <animateTransform attributeName="transform" type="translate" values="0 0;12 0;24 0;12 0;0 0;-12 0;-24 0;-12 0" dur="${speed}s" calcMode="discrete" repeatCount="indefinite"/>
-    <g>${wave(0)}<animate attributeName="opacity" values="1;0" dur=".8s" calcMode="discrete" repeatCount="indefinite"/></g>
-    <g opacity="0">${wave(1)}<animate attributeName="opacity" values="0;1" dur=".8s" calcMode="discrete" repeatCount="indefinite"/></g>
-  </g>
-
-  <g>
-    <animateTransform attributeName="transform" type="translate" values="-60 0;60 0;-60 0" dur="5s" repeatCount="indefinite"/>
-    <rect x="149" width="2" height="7" fill="${COL[2]}">
-      <animate attributeName="y" values="194;40" dur=".9s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="1;1;0" keyTimes="0;.85;1" dur=".9s" repeatCount="indefinite"/>
-    </rect>
-    <g ${glow}>
-      <use href="#sp_ship" x="141" y="200" fill="#e9f7ff"/>
-      <rect x="149" y="206" width="2" height="4" fill="#ff4d36"/>
-    </g>
-  </g>
-
-  <text x="14" y="252" font-size="6.5" fill="rgba(143,230,255,.75)" letter-spacing="1">TERRAIN · D-LOG H · ${L(f).toUpperCase()}</text>
-  <g ${glow}><circle cx="70" cy="300" r="30" fill="url(#sun)"/></g>
-  <g fill="#0a1517"><rect x="38" y="281" width="64" height="2"/><rect x="38" y="288" width="64" height="3"/><rect x="38" y="295" width="64" height="4"/></g>
-  <path d="${ridge}" fill="url(#ter)"/>
-  ${curves}
-  <line x1="10" y1="300" x2="290" y2="300" stroke="#8fe6ff" stroke-width="1"/>
-  <g clip-path="url(#fl)" stroke="#2a78ff" stroke-width=".8" opacity=".75">${floor}</g>
-
-  <rect x="0" y="30" width="300" height="334" fill="url(#vg)" pointer-events="none"/>
-
-  <text x="150" y="377" text-anchor="middle" font-size="11" font-weight="700" fill="#ff4d36" letter-spacing="3">INSERT NEGATIVE<animate attributeName="opacity" values="1;0;1" dur="1.2s" calcMode="discrete" repeatCount="indefinite"/></text>
-  <text x="150" y="389" text-anchor="middle" font-size="6" fill="rgba(143,230,255,.6)" letter-spacing="1">STARS=GRAIN · SPEED=ISO · GLOW=HALATION · DARK=VIGNETTE</text>
-</svg>`;
+  const halOk = LV.hal(f).ok;
+  const M = [['GRAIN', BLU, lv('grain'), String(lv('grain')).padStart(2, '0')],
+             ['ISO', VIO, Math.min(100, f.iso/8), String(f.iso)],
+             ['VIGN', GRN, lv('vig'), String(lv('vig')).padStart(2, '0')],
+             ['HALA', RED, lv('hal'), halOk ? String(lv('hal')) : '--']];
+  M.forEach((m, i) => {
+    const cx = 58 + i*88, lit = Math.round(m[2]/100*14);
+    s += `<text x="${cx}" y="322" ${mono} font-size="12" font-weight="700" letter-spacing="1.5" fill="${m[1]}" text-anchor="middle">${m[0]}</text>`;
+    for(let t = 0; t < 14; t++) s += `<line x1="${cx - 20}" y1="${(420 - t*6.4).toFixed(1)}" x2="${cx + 20}" y2="${(420 - t*6.4).toFixed(1)}" stroke="${t < lit ? m[1] : '#10303a'}" stroke-width="3.4"/>`;
+    s += `<text x="${cx}" y="472" ${ser} font-size="42" fill="${m[3] === '--' ? '#3a5560' : '#e9f7ff'}" text-anchor="middle">${m[3]}</text>`;
+  });
+  s += `<text x="190" y="508" ${mono} font-size="11" letter-spacing="3" fill="${RED}" text-anchor="middle" font-weight="700">INSERT NEGATIVE` +
+       `<animate attributeName="opacity" values="1;.3;1" dur="1.4s" calcMode="discrete" repeatCount="indefinite"/></text></svg>`;
+  return s;
 }
 const syncLab = () => {
   if(!ready) $('empty').innerHTML = labSVG(cur) + '<p>Tap ▸ load · swipe ⇆ film · hold ▸ original</p>';
@@ -1295,36 +1223,33 @@ $('file').addEventListener('change', e => {
 });
 $('save').onclick = save;
 
-// ---------- Icono de la app (arcade) ----------
-// Se dibuja aquí mismo: noche estrellada, invasor-bote verde neón, sol sintético y rejilla.
+// ---------- Icono de la app (osciloscopio) ----------
+// Se dibuja aquí mismo: rejilla de osciloscopio, tres trazas R, G y B de una curva tonal y una línea de barrido.
 function makeIcon(size){
   const c = document.createElement('canvas'); c.width = c.height = size;
   const x = c.getContext('2d'), s = size/180;
   x.fillStyle = '#0a1517'; x.fillRect(0, 0, size, size);
-  let sd = 4242; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
-  x.fillStyle = '#e9f7ff';
-  for(let i = 0; i < 40; i++){ x.globalAlpha = .3 + r()*.6; x.fillRect(r()*size, r()*104*s, 1.6*s, 1.6*s); }
-  x.globalAlpha = 1;
-  const H = 134*s;
-  const g = x.createLinearGradient(0, H - 28*s, 0, H);
-  g.addColorStop(0, '#ffd24a'); g.addColorStop(1, '#ff4d36');
-  x.save(); x.beginPath(); x.rect(0, 0, size, H); x.clip();
-  x.shadowColor = '#ff4d36'; x.shadowBlur = 16*s;
-  x.fillStyle = g; x.beginPath(); x.arc(90*s, H, 28*s, 0, Math.PI*2); x.fill();
-  x.shadowBlur = 0; x.fillStyle = '#0a1517';
-  [[118,2],[124,3],[129,4]].forEach(([y, hh]) => x.fillRect(60*s, y*s, 60*s, hh*s));
-  x.restore();
-  x.strokeStyle = '#2a78ff'; x.lineWidth = 1.5*s; x.globalAlpha = .85;
-  for(let i = -6; i <= 6; i++){ x.beginPath(); x.moveTo((90 + i*10)*s, H); x.lineTo((90 + i*45)*s, size); x.stroke(); }
-  [140, 148, 159, 175].forEach(y => { x.beginPath(); x.moveTo(0, y*s); x.lineTo(size, y*s); x.stroke(); });
-  x.globalAlpha = 1; x.strokeStyle = '#8fe6ff'; x.lineWidth = 2*s;
-  x.beginPath(); x.moveTo(0, H); x.lineTo(size, H); x.stroke();
-  const p = 10*s, ox = 50*s, oy = 20*s;
-  x.shadowColor = '#6be04f'; x.shadowBlur = 14*s; x.fillStyle = '#6be04f';
-  SPR.can[0].forEach((row, j) => [...row].forEach((ch, i) => {
-    if(ch === '#') x.fillRect(Math.floor(ox + i*p), Math.floor(oy + j*p), Math.ceil(p), Math.ceil(p));
-  }));
-  x.shadowBlur = 0;
+  x.strokeStyle = 'rgba(42,120,255,.45)'; x.lineWidth = 1*s;
+  for(let i = 0; i <= 5; i++){
+    x.beginPath(); x.moveTo((30 + i*24)*s, 30*s); x.lineTo((30 + i*24)*s, 150*s); x.stroke();
+    x.beginPath(); x.moveTo(30*s, (30 + i*24)*s); x.lineTo(150*s, (30 + i*24)*s); x.stroke();
+  }
+  const g = (u, k) => { const t = u*u*(3 - 2*u); return u + (t - u)*k; };
+  [['#ff4d36', .05], ['#6be04f', 0], ['#5b9cff', -.05]].forEach(([col, off]) => {
+    x.save(); x.shadowColor = col; x.shadowBlur = 8*s; x.strokeStyle = col; x.lineWidth = 3.2*s; x.lineJoin = 'round';
+    x.beginPath();
+    for(let j = 0; j <= 40; j++){
+      const u = j/40, X = (30 + u*120)*s, Y = (146 - (g(u, .55) + off)*112)*s;
+      j ? x.lineTo(X, Y) : x.moveTo(X, Y);
+    }
+    x.stroke(); x.restore();
+  });
+  x.strokeStyle = '#e9f7ff'; x.lineWidth = 2*s; x.globalAlpha = .85;
+  x.beginPath(); x.moveTo(104*s, 30*s); x.lineTo(104*s, 150*s); x.stroke(); x.globalAlpha = 1;
+  x.strokeStyle = '#8fe6ff'; x.lineWidth = 3*s;
+  [[18,18,1,1],[162,18,-1,1],[18,162,1,-1],[162,162,-1,-1]].forEach(([cx, cy, a, b]) => {
+    x.beginPath(); x.moveTo(cx*s, (cy + b*16)*s); x.lineTo(cx*s, cy*s); x.lineTo((cx + a*16)*s, cy*s); x.stroke();
+  });
   return c.toDataURL('image/png');
 }
 const ICON = makeIcon(180);
