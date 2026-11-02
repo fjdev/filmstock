@@ -594,6 +594,23 @@ const KEEP = ['Gold 200','Ultramax 400','Portra 160','Portra 800','Ektar 100','V
   'Tri-X 400','HP5+','Fomapan 200'];
 FILMS.splice(0, FILMS.length, ...KEEP.map(n => FILMS.find(f => f.n === n)).filter(Boolean));
 
+// Parche 14: tras comparar con el PDF de referencias (estimado, sin ver el render).
+const PATCH14 = {
+ 'Portra 160': { curve:[[0,.045],[.25,.285],[.5,.55],[.8,.845],[1,.965]], sat:.92, soft:.2,
+   shTint:[-.006,.004,.008], midTint:[.010,.006,-.010], hiTint:[.016,.010,-.006],
+   bands:{R:[-4,.04,-.02],O:[1,-.08,-.01],Y:[2,-.04,-.01],G:[-4,-.10,.04],A:[0,-.10,-.04],B:[-3,-.10,-.02],P:[-11,-.05,.04],M:[0,-.10,-.02]} },
+ 'Pro 400H': { sat:.9, shTint:[-.010,.008,.014], midTint:[-.012,.012,.010], hiTint:[-.004,.010,.008],
+   bands:{R:[2,.02,.02],O:[0,-.06,.02],Y:[2,-.10,.02],G:[20,.02,-.10],A:[6,.14,0],B:[-16,.14,-.02],P:[0,-.08,.02],M:[-5,.08,.05]} },
+ 'Superia 400': { sat:1.1, contrast:1.14, curveS:.26, shTint:[-.010,.012,.010], hiTint:[-.012,.008,.002],
+   bands:{R:[3,.10,0],O:[3,.12,.01],Y:[-2,-.04,.01],G:[12,.04,-.08],A:[0,.06,-.03],B:[-4,.12,-.05],P:[4,0,0],M:[-4,.12,.03]} },
+ 'Fujifilm C200': { sat:.84, contrast:.94, curveS:.06, lift:[.036,.038,.030],
+   shTint:[-.002,.006,-.004], midTint:[.006,.010,-.008], hiTint:[.012,.010,-.010],
+   bands:{R:[3,0,0],O:[2,-.04,0],Y:[-3,-.06,0],G:[-8,.02,-.02],B:[2,-.10,-.02]} },
+ 'Lomography 800': { curve:[[0,.06],[.15,.17],[.5,.5],[.85,.88],[1,.97]], sat:1,
+   shTint:[-.004,.004,.016], midTint:[.004,0,-.004], hiTint:[.006,.004,-.002] },
+};
+FILMS.forEach(f => Object.assign(f, PATCH14[f.n] || {}));
+
 // ---------- Curvas tonales (spline monótona) ----------
 function curveLUT(pts){
   const n = pts.length, h = [], d = [], m = [];
@@ -690,6 +707,8 @@ float gnoise(vec2 p, uint s){
   float k = 0.4*grainRough;
   return (a*(1.-k) + b*k - .5) * 2.6;
 }
+
+
 
 // Una mancha de fuga: lengua de luz que entra desde un borde, más profunda en su centro y con contorno irregular.
 float leakBlob(vec4 p, vec2 q){
