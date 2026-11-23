@@ -1118,8 +1118,9 @@ function save(){
 
 // ---------- Exportar a Lightroom (.xmp) ----------
 // Traduce la película a un preset de Lightroom. Es una aproximación: Lightroom procesa en otro orden que el shader.
-// · Curvas: la parte tonal del motor (balance, curva, tintes, ganancia y negro) se calcula sobre grises.
-//   La curva maestra lleva la media de los tres canales; las curvas R, G y B, lo que cada canal se separa de ella.
+// · Curvas: la parte tonal del motor (balance, curva, tintes, ganancia y negro) se calcula sobre grises y se pasa
+//   al espacio en que Lightroom aplica sus curvas (primarios ProPhoto). La curva maestra lleva la media de los tres
+//   canales; las curvas R, G y B, lo que cada canal se separa de ella.
 // · Bandas, saturación, grano y viñeteado: escalas de XK (abajo).
 // · B/N: tratamiento en blanco y negro con la mezcla de grises calculada a partir de los pesos `mono`.
 // · Sin equivalente: halation, fuga de luz y fecha. Strength no se exporta (en Lightroom, la cantidad del preset).
@@ -1140,6 +1141,14 @@ const LRB = ['Red','Orange','Yellow','Green','Aqua','Blue','Purple','Magenta'];
 const HUEC = [[1,0,0],[1,.5,0],[1,1,0],[0,1,0],[0,1,1],[0,0,1],[.5,0,1],[1,0,1]];
 const XS = [0, .05, .12, .22, .35, .5, .65, .78, .88, .95, 1];
 
+// sRGB lineal → ProPhoto lineal (adaptado a D50). Cada fila suma 1, así que los grises no cambian.
+// Prueba del 23-nov: con las curvas R, G y B planas Pro 400H salía como en la app; los tintes fríos
+// se exageraban porque Lightroom aplica esas curvas con primarios ProPhoto, mucho más extremos que sRGB.
+const S2P = [[.5293,.3300,.1407],[.0983,.8734,.0283],[.0169,.1177,.8654]];
+const dec = v => v <= .04045 ? v/12.92 : Math.pow((v + .055)/1.055, 2.4);
+const enc = v => v <= .0031308 ? v*12.92 : 1.055*Math.pow(v, 1/2.4) - .055;
+const toPro = c => { const l = c.map(dec); return S2P.map(r => enc(Math.max(0, r[0]*l[0] + r[1]*l[1] + r[2]*l[2]))); };
+
 // Lo que el motor hace con un gris de valor x (sin bandas, grano ni efectos): devuelve [r, g, b].
 function toneRGB(f, x, M, C){
   const cl = v => v < 0 ? 0 : v > 1 ? 1 : v;
@@ -1159,7 +1168,7 @@ function xmpCurves(f){
   const C = [f.curveR, f.curveG, f.curveB].map(c => c ? curveLUT(c) : null);
   const P = v => Math.round(Math.min(1, Math.max(0, v))*255);
   const inc = pts => { const o = []; pts.forEach(p => { if(!o.length || p[0] > o[o.length-1][0]) o.push(p); }); return o; };
-  const ys = XS.map(x => toneRGB(f, x, M, C));
+  const ys = XS.map(x => toPro(toneRGB(f, x, M, C)));
   const m = ys.map(y => (y[0] + y[1] + y[2])/3);
   const master = inc(XS.map((x, i) => [P(x), P(m[i])]));
   const id = [[0,0],[255,255]];
