@@ -1120,12 +1120,22 @@ function save(){
 // Traduce la película a un preset de Lightroom. Es una aproximación: Lightroom procesa en otro orden que el shader.
 // · Curvas: la parte tonal del motor (balance, curva, tintes, ganancia y negro) se calcula sobre grises.
 //   La curva maestra lleva la media de los tres canales; las curvas R, G y B, lo que cada canal se separa de ella.
-//   Así los tintes de sombras, medios y luces van dentro de las curvas, sin pasar por la gradación de color.
-// · Bandas: inversa de la conversión del histórico (matiz ÷ 0,3, saturación ÷ 0,006, luminosidad ÷ 0,004).
-// · Saturación: (sat − 1) × 100. Suavizado: textura y claridad negativas.
-// · Grano y viñeteado: escalas estimadas. El grano de Lightroom es monocromo. Respetan los interruptores Grain y Vignette.
+// · Bandas, saturación, grano y viñeteado: escalas de XK (abajo).
 // · B/N: tratamiento en blanco y negro con la mezcla de grises calculada a partir de los pesos `mono`.
 // · Sin equivalente: halation, fuga de luz y fecha. Strength no se exporta (en Lightroom, la cantidad del preset).
+//
+// Escalas calibradas con la prueba del atardecer (23-nov): Lightroom aplica los giros de matiz y las subidas
+// de saturación con más fuerza que la app (en colores apagados como el cielo la app casi no actúa).
+const XK = {
+  hue: .6,        // grados de la app por unidad de matiz de Lightroom (antes .3: cielos verde azulados)
+  satUp: .01,     // subidas de saturación por banda (antes .006)
+  satDown: .006,  // bajadas de saturación por banda (sin cambios)
+  lum: .004,      // luminosidad por banda
+  gsatUp: 60,     // saturación global hacia arriba: (sat − 1) × 60 (antes × 100)
+  gsatDown: 100,  // saturación global hacia abajo: (sat − 1) × 100
+  grain: 50,      // cantidad de grano (antes 60)
+  vig: 70,        // viñeta (antes 100)
+};
 const LRB = ['Red','Orange','Yellow','Green','Aqua','Blue','Purple','Magenta'];
 const HUEC = [[1,0,0],[1,.5,0],[1,1,0],[0,1,0],[0,1,1],[0,0,1],[.5,0,1],[1,0,1]];
 const XS = [0, .05, .12, .22, .35, .5, .65, .78, .88, .95, 1];
@@ -1182,15 +1192,15 @@ const lim = v => Math.max(-100, Math.min(100, Math.round(v)));
 function xmpPreset(f, i){
   const bw = !!f.bw, a = {};
   a.ConvertToGrayscale = bw ? 'True' : 'False';
-  a.Saturation = bw ? '0' : sg(lim((f.sat - 1)*100));
+  a.Saturation = bw ? '0' : sg(lim((f.sat - 1)*(f.sat >= 1 ? XK.gsatUp : XK.gsatDown)));
   a.Vibrance = '0';
   a.Texture = sg(lim(-f.soft*60));
   a.Clarity2012 = sg(lim(-f.soft*30));
   LRB.forEach((nm, j) => {
     const b = (!bw && f.bands[BN[j]]) || [0,0,0];
-    a['HueAdjustment' + nm] = sg(lim(b[0]/.3));
-    a['SaturationAdjustment' + nm] = sg(lim(b[1]/.006));
-    a['LuminanceAdjustment' + nm] = sg(lim(b[2]/.004));
+    a['HueAdjustment' + nm] = sg(lim(b[0]/XK.hue));
+    a['SaturationAdjustment' + nm] = sg(lim(b[1]/(b[1] >= 0 ? XK.satUp : XK.satDown)));
+    a['LuminanceAdjustment' + nm] = sg(lim(b[2]/XK.lum));
   });
   const dm = [.3,.59,.11];
   LRB.forEach((nm, j) => {
@@ -1201,11 +1211,11 @@ function xmpPreset(f, i){
   Object.assign(a, {
     SplitToningShadowSaturation:'0', SplitToningHighlightSaturation:'0', ColorGradeMidtoneSat:'0', ColorGradeGlobalSat:'0',
     ParametricShadows:'0', ParametricDarks:'0', ParametricLights:'0', ParametricHighlights:'0',
-    GrainAmount: String(ON.grain ? Math.round(Math.min(100, f.grain[0]*60)) : 0),
+    GrainAmount: String(ON.grain ? Math.round(Math.min(100, f.grain[0]*XK.grain)) : 0),
     GrainSize: String(Math.round(15 + f.grain[1]*15)),
     GrainFrequency: String(Math.round(Math.min(100, f.grain[3]*100))),
-    PostCropVignetteAmount: ON.vig && f.vig > 0 ? sg(lim(-f.vig*100)) : '0',
-    PostCropVignetteMidpoint:'40', PostCropVignetteFeather:'75', PostCropVignetteRoundness:'0',
+    PostCropVignetteAmount: ON.vig && f.vig > 0 ? sg(lim(-f.vig*XK.vig)) : '0',
+    PostCropVignetteMidpoint:'50', PostCropVignetteFeather:'75', PostCropVignetteRoundness:'0',
     PostCropVignetteStyle:'1', PostCropVignetteHighlightContrast:'0',
     ToneCurveName2012:'Custom',
   });
